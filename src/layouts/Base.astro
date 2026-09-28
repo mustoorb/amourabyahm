@@ -1,0 +1,81 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import Chrome from '../components/Chrome.astro';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  noindex?: boolean;
+  bodyClass?: string;
+  chrome?: 'home' | 'page' | 'none';
+  view?: 'gallery' | 'archive' | null;
+  jsonLd?: Record<string, unknown>;
+}
+
+const {
+  title,
+  description = 'amoura — cinematic wedding films and photographs, between Paris and Dubai.',
+  image,
+  noindex = false,
+  bodyClass = '',
+  chrome = 'page',
+  view = null,
+  jsonLd,
+} = Astro.props;
+
+const fullTitle = title ? `${title} — amoura®` : 'amoura® — wedding films & photographs';
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="theme-color" content="#0c0a09" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="amoura" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {image && <meta property="og:image" content={image} />}
+    <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400&display=swap"
+    />
+    <ClientRouter fallback="animate" />
+  </head>
+  <body class={bodyClass}>
+    {chrome !== 'none' && <Chrome variant={chrome} view={view} />}
+    <slot />
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+  </body>
+</html>
+
+<script>
+  import { initCursor } from '../scripts/cursor.js';
+  import { initGrain } from '../scripts/grain.js';
+  import { initReveal } from '../scripts/reveal.js';
+  import { onPage } from '../scripts/lifecycle.js';
+
+  initGrain();
+  onPage(() => {
+    initCursor();
+    return initReveal();
+  });
+</script>

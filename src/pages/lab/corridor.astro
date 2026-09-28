@@ -1,0 +1,68 @@
+---
+import Corridor from '../../components/Corridor.astro';
+import Base from '../../layouts/Base.astro';
+import { getFeatured } from '../../lib/content.js';
+import { KNOBS } from '../../scripts/corridor.js';
+
+const featured = await getFeatured();
+const sliders = [
+  ['damping', 0.02, 0.25, 0.005],
+  ['inertia', 0.7, 0.98, 0.01],
+  ['wheelSpeed', 0.0005, 0.005, 0.0001],
+  ['dragSpeed', 0.001, 0.01, 0.0002],
+  ['snapDelay', 0, 600, 10],
+  ['blurPerUnit', 0, 2, 0.05],
+  ['blurMax', 0, 8, 0.1],
+  ['centerAmount', 0, 1, 0.02],
+  ['sideSpread', 0, 0.4, 0.01, true],
+  ['coverScale', 0.3, 0.9, 0.01, true],
+  ['momentScale', 0.2, 0.8, 0.01, true],
+  ['parallax', 0, 0.15, 0.005],
+  ['fogNear', 4, 30, 0.5],
+  ['fogFar', 10, 60, 0.5],
+] as const;
+---
+
+<Base title="Lab — Corridor" noindex chrome="home" bodyClass="is-home">
+  <Corridor stories={featured} lab />
+  <details class="knobs" open>
+    <summary class="label">Feel knobs</summary>
+    {
+      sliders.map(([k, min, max, step, relayout]) => (
+        <label class="knob">
+          <span class="label">{k}</span>
+          <input type="range" min={min} max={max} step={step} value={(KNOBS as any)[k]} data-knob={k} data-relayout={relayout ? '' : undefined} />
+          <output class="label label--dim">{(KNOBS as any)[k]}</output>
+        </label>
+      ))
+    }
+    <p class="label label--dim">Copy values into KNOBS in src/scripts/corridor.js</p>
+  </details>
+</Base>
+
+<style is:global>
+  body.is-home { overflow: hidden; }
+  .knobs { position: fixed; right: 16px; top: 90px; z-index: 70; width: 260px; max-height: calc(100vh - 180px); overflow: auto; padding: 14px 16px; border-radius: 12px; background: rgba(12, 10, 9, 0.82); backdrop-filter: blur(12px); border: 1px solid var(--line); }
+  .knobs summary { cursor: pointer; margin-bottom: 8px; }
+  .knob { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; margin: 10px 0; }
+  .knob input { grid-column: 1 / -1; accent-color: var(--rose); width: 100%; }
+  .knob output { grid-row: 1; grid-column: 2; }
+</style>
+
+<script>
+  import { onPage } from '../../scripts/lifecycle.js';
+  onPage(() => {
+    const inputs = [...document.querySelectorAll('[data-knob]')];
+    if (!inputs.length) return;
+    const onInput = (e) => {
+      const el = e.currentTarget;
+      const c = window.__corridor;
+      el.nextElementSibling.textContent = el.value;
+      if (!c) return;
+      c.knobs[el.dataset.knob] = Number(el.value);
+      if ('relayout' in el.dataset) c.relayout();
+    };
+    inputs.forEach((i) => i.addEventListener('input', onInput));
+    return () => inputs.forEach((i) => i.removeEventListener('input', onInput));
+  });
+</script>

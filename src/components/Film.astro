@@ -1,0 +1,49 @@
+---
+// Click-to-play film facade: a poster until pressed, then the real player (inline).
+import { embedUrl } from '../lib/content.js';
+
+interface Props {
+  film: { provider: 'vimeo' | 'youtube'; id: string; poster?: string | null };
+  title: string;
+  eager?: boolean;
+}
+const { film, title, eager = false } = Astro.props;
+---
+
+<div class="film" data-film data-src={embedUrl(film, { autoplay: true })}>
+  {film.poster && <img class="film__poster" src={film.poster} alt="" loading={eager ? 'eager' : 'lazy'} decoding="async" />}
+  <button class="film__play" type="button" data-cursor="view" data-cursor-label="Play film">
+    <span class="film__icon" aria-hidden="true"
+      ><svg viewBox="0 0 24 24" width="18" height="18"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"></path></svg></span
+    >
+    <span class="label">Play film</span>
+    <span class="sr-only"> — {title}</span>
+  </button>
+</div>
+
+<style>
+  .film { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 6px; background: linear-gradient(135deg, #2a211d, #141010); }
+  .film__poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 1.4s var(--ease), opacity 0.6s var(--ease); }
+  .film:hover .film__poster { transform: scale(1.03); }
+  .film__play { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; background: linear-gradient(to top, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.05)); }
+  .film__icon { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; border: 1px solid rgba(236, 228, 218, 0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); transition: background 0.5s var(--ease), color 0.5s var(--ease); }
+  .film:hover .film__icon { background: var(--ink); color: var(--bg); }
+  .film :global(iframe) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+</style>
+
+<script>
+  import { onPage } from '../scripts/lifecycle.js';
+  onPage(() => {
+    const films = document.querySelectorAll('[data-film]');
+    const onClick = (e) => {
+      const el = e.currentTarget.closest('[data-film]');
+      const iframe = document.createElement('iframe');
+      iframe.src = el.dataset.src;
+      iframe.allow = 'autoplay; fullscreen; picture-in-picture; encrypted-media';
+      iframe.allowFullscreen = true;
+      iframe.title = el.querySelector('.sr-only')?.textContent?.replace(/^\s*—\s*/, '') || 'Film';
+      el.replaceChildren(iframe);
+    };
+    films.forEach((f) => f.querySelector('.film__play')?.addEventListener('click', onClick));
+  });
+</script>

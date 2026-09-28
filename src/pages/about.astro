@@ -1,0 +1,89 @@
+---
+import Base from '../layouts/Base.astro';
+import { studio } from '../data.js';
+import { AMOURA_CHAT_URL, BRAND } from '../lib/config.js';
+
+const external = /^https?:/.test(AMOURA_CHAT_URL);
+const isSelf = AMOURA_CHAT_URL.startsWith('/about');
+---
+
+<Base title="About" description="amoura is a small wedding film & photography studio working between Paris and Dubai.">
+  <main class="page about">
+    <p class="label label--dim" data-reveal>About the studio</p>
+    <h1 class="display about__statement" data-reveal style="--d:.06s">{studio.statement}</h1>
+
+    <section class="about__intro">
+      {studio.intro.map((p, i) => <p class="lede" data-reveal style={`--d:${0.1 + i * 0.08}s`}>{p}</p>)}
+    </section>
+
+    <section class="about__block">
+      <h2 class="label label--dim" data-reveal>The people</h2>
+      <ul class="people">
+        {
+          studio.people.map((p, i) => (
+            <li data-reveal style={`--d:${i * 0.08}s`}>
+              <span class="people__mono" aria-hidden="true">{p.name.slice(0, 1)}</span>
+              <span class="display display--sm">{p.name}</span>
+              <span class="label">{p.role}</span>
+              <span class="label label--dim">{p.city}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="about__block">
+      <h2 class="label label--dim" data-reveal>How we work</h2>
+      <ol class="process">
+        {
+          studio.process.map(([t, d], i) => (
+            <li data-reveal style={`--d:${i * 0.06}s`}>
+              <span class="label">{String(i + 1).padStart(2, '0')}</span>
+              <span class="display display--sm">{t}</span>
+              <p>{d}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <section class="about__block contact" id="contact">
+      <h2 class="label label--dim" data-reveal>Where we are</h2>
+      <ul class="cities">
+        {
+          BRAND.clocks.map((c) => (
+            <li class="display display--md" data-reveal>
+              {c.label}
+            </li>
+          ))
+        }
+      </ul>
+      <p class="lede" data-reveal>Tell us about your day — where, when, and what you want to remember.</p>
+      {
+        !isSelf && (
+          <a class="pill pill--rose" href={AMOURA_CHAT_URL} {...(external ? { target: '_blank', rel: 'noopener' } : {})} data-reveal>
+            Let’s Talk
+          </a>
+        )
+      }
+      {isSelf && <p class="label label--dim" data-reveal>Chat link coming soon.</p>}
+    </section>
+  </main>
+</Base>
+
+<style>
+  .about { display: grid; gap: 0; }
+  .about__statement { max-width: 16ch; margin: 22px 0 10vh; }
+  .about__intro { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 40px; margin-left: auto; max-width: 980px; }
+  .about__intro .lede { max-width: none; color: var(--ink-2); }
+  .about__block { margin-top: 16vh; display: grid; gap: 40px; }
+  .people { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 28px; }
+  .people li { display: grid; gap: 8px; padding-top: 22px; border-top: 1px solid var(--line); }
+  .people__mono { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line-2); font-family: var(--serif); font-style: italic; font-size: 34px; margin-bottom: 14px; }
+  .process { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 28px; }
+  .process li { display: grid; gap: 10px; align-content: start; padding-top: 22px; border-top: 1px solid var(--line); }
+  .process p { margin: 0; color: var(--ink-2); }
+  .cities { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0 1em; }
+  .cities li + li::before { content: '·'; color: var(--ink-3); margin-right: 0.5em; font-style: normal; }
+  .contact { justify-items: start; }
+</style>

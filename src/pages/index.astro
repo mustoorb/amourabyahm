@@ -1,0 +1,16 @@
+---
+import Corridor from '../components/Corridor.astro';
+import Base from '../layouts/Base.astro';
+import { getFeatured } from '../lib/content.js';
+
+const featured = await getFeatured();
+---
+
+<Base chrome="home" view="gallery" bodyClass="is-home" image={featured[0]?.cover}>
+  <h1 class="sr-only">amoura — wedding films and photographs</h1>
+  <Corridor stories={featured} />
+</Base>
+
+<style is:global>
+  body.is-home { overflow: hidden; overscroll-behavior: none; }
+</style>

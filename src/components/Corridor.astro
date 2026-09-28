@@ -1,0 +1,335 @@
+---
+import { metaLine } from '../lib/content.js';
+import { heroName } from '../lib/vt.js';
+
+interface Props {
+  stories: any[];
+  lab?: boolean;
+}
+const { stories, lab = false } = Astro.props;
+const json = JSON.stringify(stories).replace(/</g, '\\u003c');
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+<section class="corridor" data-corridor data-lab={lab ? '' : undefined} aria-label="Featured stories">
+  <div class="corridor__canvas" data-corridor-canvas></div>
+  <div class="corridor__films" data-corridor-films aria-hidden="true"></div>
+  <span class="corridor__new badge-new" data-corridor-new aria-hidden="true">NEW</span>
+
+  <!-- Crawlable list of featured stories. Visible as the no-WebGL fallback; screen-reader-only otherwise. -->
+  <ol class="corridor__list">
+    {
+      stories.map((s, i) => (
+        <li>
+          <a href={`/story/${s.slug}`}>
+            <img
+              src={s.coverSm}
+              alt=""
+              loading={i < 3 ? 'eager' : 'lazy'}
+              decoding="async"
+              style={`view-transition-name:${heroName(s.slug)}-fallback`}
+            />
+            <span class="label">
+              {pad(i + 1)} {i === 0 && <span class="badge-new">NEW</span>}
+            </span>
+            <span class="corridor__list-title">{s.title}</span>
+            <span class="label label--dim">{metaLine(s).slice(0, -2).join(' · ')}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ol>
+
+  <div class="corridor__caption" data-caption aria-live="polite">
+    <p class="label corridor__cap-top">
+      <span data-cap-index>01</span><span class="label--dim"> / {pad(stories.length)}</span>
+      <span class="badge-new" data-cap-new>NEW</span>
+    </p>
+    <h2 class="display display--md corridor__cap-title"><a data-cap-link href={`/story/${stories[0]?.slug}`}>{stories[0]?.title}</a></h2>
+    <p class="label label--dim" data-cap-meta>{stories[0] && metaLine(stories[0]).join(' · ')}</p>
+    <a class="link-arrow label corridor__cap-cta" data-cap-link href={`/story/${stories[0]?.slug}`}>View story <span aria-hidden="true">→</span></a>
+  </div>
+
+  <ol class="corridor__ticks" aria-label="Jump to story">
+    {
+      stories.map((s, i) => (
+        <li>
+          <button type="button" data-tick={i} aria-label={`${s.title}, ${s.year}`} aria-current={i === 0 ? 'true' : undefined}>
+            <span class="label">{pad(i + 1)}</span>
+          </button>
+        </li>
+      ))
+    }
+  </ol>
+
+  <div class="corridor__end" data-end>
+    <p class="label">End of the featured work</p>
+    <p class="display display--sm">Every story lives in the Archive.</p>
+    <a class="pill" href="/archive">Open the Archive <span aria-hidden="true">→</span></a>
+  </div>
+
+  <div class="corridor__guide" data-guide aria-hidden="true">
+    <span class="corridor__guide-line"></span>
+    <p class="label corridor__guide--fine">Scroll · drag · or use the arrow keys to glide</p>
+    <p class="label label--dim corridor__guide--fine">Click a frame to open its story</p>
+    <p class="label corridor__guide--touch">Swipe up to glide</p>
+    <p class="label label--dim corridor__guide--touch">Tap a frame to open its story</p>
+  </div>
+
+  <div class="loader" data-loader>
+    <div class="loader__mark" aria-hidden="true">a</div>
+    <div class="loader__bar"><span data-loader-bar></span></div>
+    <p class="label loader__pct"><span data-loader-pct>0</span>%</p>
+  </div>
+
+  <script type="application/json" data-stories set:html={json} />
+</section>
+
+<style>
+  .corridor { position: fixed; inset: 0; overflow: hidden; background: radial-gradient(90% 70% at 50% 48%, #1a1411 0%, var(--bg) 70%); touch-action: none; }
+  .corridor__canvas, .corridor__films { position: absolute; inset: 0; }
+  .corridor__canvas :global(canvas) { display: block; width: 100%; height: 100%; outline: none; }
+  .corridor__films { pointer-events: none; z-index: 2; }
+  .corridor__films :global(.corridor__film) { position: absolute; left: 0; top: 0; overflow: hidden; opacity: 0; transition: opacity 1.2s var(--ease); will-change: transform; }
+  .corridor__films :global(.corridor__film.is-on) { opacity: 1; }
+  .corridor__films :global(iframe) { position: absolute; inset: -2%; width: 104%; height: 104%; border: 0; pointer-events: none; }
+
+  .corridor__new { position: absolute; left: 0; top: 0; z-index: 3; opacity: 0; transition: opacity 0.6s var(--ease); pointer-events: none; }
+  .corridor__new:global(.is-on) { opacity: 1; }
+
+  /* crawlable list: sr-only while WebGL runs, a scroll strip if it can't */
+  .corridor__list { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); margin: 0; padding: 0; list-style: none; }
+  .corridor__list img { display: none; }
+  :global(.is-fallback) .corridor__list {
+    position: absolute; inset: 0; width: auto; height: auto; clip: auto;
+    display: flex; gap: 20px; align-items: center; padding: 0 var(--gutter);
+    overflow-x: auto; scroll-snap-type: x mandatory; touch-action: pan-x;
+  }
+  :global(.is-fallback) .corridor__list li { flex: 0 0 min(72vw, 340px); scroll-snap-align: center; }
+  :global(.is-fallback) .corridor__list a { display: grid; gap: 10px; }
+  :global(.is-fallback) .corridor__list img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 6px; }
+  :global(.is-fallback) .corridor__caption, :global(.is-fallback) .corridor__ticks { display: none; }
+  .corridor__list-title { font-family: var(--serif); font-style: italic; font-size: 2rem; line-height: 1; }
+
+  .corridor__caption {
+    position: absolute; left: var(--gutter); bottom: 96px; z-index: 5; max-width: min(560px, 80vw);
+    display: grid; gap: 14px;
+    opacity: 0; transform: translateY(16px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+  }
+  .corridor__caption:global(.is-on) { opacity: 1; transform: none; }
+  .corridor__caption:global(.is-swapping) { opacity: 0; transform: translateY(10px); transition-duration: 0.35s; }
+  .corridor__cap-top { display: flex; align-items: center; gap: 10px; }
+  .corridor__cap-title { text-shadow: 0 2px 40px rgba(0, 0, 0, 0.5); }
+  .corridor__cap-cta { justify-self: start; }
+  [data-cap-new][hidden] { display: none; }
+
+  .corridor__ticks { position: absolute; right: var(--gutter); top: 50%; transform: translateY(-50%); z-index: 5; list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; opacity: 0; transition: opacity 1s var(--ease); }
+  :global(.is-revealed) .corridor__ticks { opacity: 1; }
+  .corridor__ticks button { display: flex; align-items: center; gap: 10px; padding: 3px 0; flex-direction: row-reverse; }
+  .corridor__ticks button::before { content: ''; width: 14px; height: 1px; background: var(--ink-3); transition: width 0.6s var(--ease), background 0.6s var(--ease); }
+  .corridor__ticks .label { opacity: 0; transition: opacity 0.4s var(--ease); font-size: 10px; }
+  .corridor__ticks button:hover .label, .corridor__ticks button[aria-current='true'] .label { opacity: 1; }
+  .corridor__ticks button[aria-current='true']::before { width: 34px; background: var(--ink); }
+
+  .corridor__end {
+    position: absolute; inset: 0; z-index: 4; display: grid; place-content: center; justify-items: center; gap: 22px; text-align: center; padding: var(--gutter);
+    opacity: 0; pointer-events: none; transition: opacity 1s var(--ease);
+  }
+  .corridor__end:global(.is-on) { opacity: 1; pointer-events: auto; }
+
+  .corridor__guide {
+    position: absolute; left: 50%; top: 50%; z-index: 6; transform: translate(-50%, -50%);
+    display: grid; justify-items: center; gap: 10px; text-align: center; pointer-events: none;
+    padding: 28px 34px; border-radius: 16px; background: rgba(12, 10, 9, 0.55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    opacity: 0; transition: opacity 0.9s var(--ease);
+  }
+  .corridor__guide:global(.is-on) { opacity: 1; }
+  .corridor__guide--touch { display: none; }
+  @media (hover: none) { .corridor__guide--touch { display: block; } .corridor__guide--fine { display: none; } }
+  .corridor__guide-line { width: 1px; height: 46px; background: linear-gradient(var(--ink), transparent); animation: guide 2.2s var(--ease-io) infinite; transform-origin: top; margin-bottom: 8px; }
+  @keyframes guide { 0% { transform: scaleY(0); opacity: 1; } 60% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+
+  .loader { position: absolute; inset: 0; z-index: 50; display: grid; place-content: center; justify-items: center; gap: 26px; background: var(--bg); transition: opacity 1.1s var(--ease), visibility 1.1s; }
+  .loader:global(.is-done) { opacity: 0; visibility: hidden; }
+  .loader:global(.is-skip) { display: none; }
+  .loader__mark { font-family: var(--serif); font-style: italic; font-weight: 300; font-size: 88px; line-height: 1; animation: pulse 2.4s var(--ease-io) infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 0.35; transform: scale(0.97); } 50% { opacity: 1; transform: scale(1); } }
+  .loader__bar { width: min(220px, 50vw); height: 1px; background: var(--line); overflow: hidden; }
+  .loader__bar span { display: block; height: 100%; width: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, var(--rose), var(--gold)); transition: transform 0.5s var(--ease); }
+  .loader__pct { font-variant-numeric: tabular-nums; }
+
+  :global(.morph) { position: fixed; z-index: 100; object-fit: cover; border-radius: 6px; pointer-events: none; }
+
+  @media (max-width: 760px) {
+    .corridor__caption { bottom: 84px; gap: 10px; }
+    .corridor__ticks { display: none; }
+  }
+</style>
+
+<script>
+  import { navigate } from 'astro:transitions/client';
+  import { setCursor } from '../scripts/cursor.js';
+  import { onPage, prefersReducedMotion } from '../scripts/lifecycle.js';
+  import { chime, tick } from '../scripts/sound.js';
+  import { heroName } from '../lib/vt.js';
+
+  const SEEN = 'amoura:seen';
+  const GUIDED = 'amoura:guided';
+  const POS = 'amoura:corridor-t';
+  const store = {
+    get: (s, k) => { try { return s.getItem(k); } catch { return null; } },
+    set: (s, k, v) => { try { s.setItem(k, v); } catch {} },
+  };
+
+  onPage(() => {
+    const root = document.querySelector('[data-corridor]');
+    if (!root) return;
+    // Three.js is loaded lazily so the loader paints immediately.
+    let cleanup = null;
+    let dead = false;
+    import('../scripts/corridor.js').then(({ mountCorridor }) => {
+      if (!dead) cleanup = start(root, mountCorridor);
+    });
+    return () => {
+      dead = true;
+      cleanup?.();
+    };
+  });
+
+  function start(root, mountCorridor) {
+
+    const stories = JSON.parse(root.querySelector('[data-stories]').textContent);
+    const reduced = prefersReducedMotion();
+    const loaderEl = root.querySelector('[data-loader]');
+    const bar = root.querySelector('[data-loader-bar]');
+    const pct = root.querySelector('[data-loader-pct]');
+    const caption = root.querySelector('[data-caption]');
+    const capIndex = root.querySelector('[data-cap-index]');
+    const capNew = root.querySelector('[data-cap-new]');
+    const capMeta = root.querySelector('[data-cap-meta]');
+    const capLinks = root.querySelectorAll('[data-cap-link]');
+    const capTitle = root.querySelector('.corridor__cap-title a');
+    const ticks = [...root.querySelectorAll('[data-tick]')];
+    const endEl = root.querySelector('[data-end]');
+    const guide = root.querySelector('[data-guide]');
+
+    const seen = store.get(sessionStorage, SEEN) === '1';
+    if (seen) loaderEl.classList.add('is-skip');
+
+    const saved = Number(store.get(sessionStorage, POS));
+    const startAt = Number.isFinite(saved) ? saved : 0;
+
+    const meta = (s) => {
+      const photos = s.media.filter((m) => m.type === 'image').length;
+      const films = s.media.filter((m) => m.type === 'video').length;
+      return [...s.tags, s.year, `${photos} photos`, films ? `${films} film${films > 1 ? 's' : ''}` : null].filter(Boolean).join(' · ');
+    };
+
+    let shownStory = -1;
+    let swapTimer = 0;
+    function showStory(si) {
+      if (si === shownStory) return;
+      const first = shownStory === -1;
+      shownStory = si;
+      const s = stories[si];
+      const paint = () => {
+        capIndex.textContent = String(si + 1).padStart(2, '0');
+        capNew.hidden = si !== 0;
+        capTitle.textContent = s.title;
+        capMeta.textContent = meta(s);
+        capLinks.forEach((a) => a.setAttribute('href', `/story/${s.slug}`));
+        ticks.forEach((b, i) => (i === si ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current')));
+        caption.classList.remove('is-swapping');
+      };
+      clearTimeout(swapTimer);
+      if (first) paint();
+      else {
+        caption.classList.add('is-swapping');
+        swapTimer = setTimeout(paint, 320);
+      }
+    }
+
+    async function openStory(slug, { rect, src, t }) {
+      chime();
+      store.set(sessionStorage, POS, String(t));
+      if (rect && !reduced && document.startViewTransition) {
+        const img = new Image();
+        img.alt = '';
+        img.src = src;
+        img.className = 'morph';
+        Object.assign(img.style, {
+          left: `${rect.left}px`,
+          top: `${rect.top}px`,
+          width: `${rect.width}px`,
+          height: `${rect.height}px`,
+          viewTransitionName: heroName(slug),
+        });
+        document.body.append(img);
+        await Promise.race([img.decode().catch(() => {}), new Promise((r) => setTimeout(r, 300))]);
+      }
+      navigate(`/story/${slug}`);
+    }
+
+    const corridor = mountCorridor(root, {
+      stories,
+      startAt,
+      reducedMotion: reduced,
+      knobs: window.__corridorKnobs,
+      onProgress: (p) => {
+        bar.style.transform = `scaleX(${p})`;
+        pct.textContent = String(Math.round(p * 100));
+      },
+      onChange: ({ storyIndex }) => showStory(storyIndex),
+      onHover: (stop) => {
+        if (stop) tick();
+        setCursor(stop ? 'view' : null, stop ? (stop.kind === 'film' ? 'Watch story →' : 'View story →') : '');
+      },
+      onDrag: (on) => setCursor(on ? 'drag' : null),
+      onFirstInteraction: () => {
+        guide.classList.remove('is-on');
+        store.set(localStorage, GUIDED, '1');
+      },
+      onFrame: ({ end }) => endEl.classList.toggle('is-on', end),
+      onOpen: openStory,
+    });
+
+    if (!corridor) {
+      root.classList.add('is-fallback');
+      loaderEl.classList.add('is-skip');
+      return;
+    }
+    window.__corridor = corridor;
+
+    const started = performance.now();
+    let lifted = false;
+    const lift = () => {
+      if (lifted) return;
+      lifted = true;
+      const wait = seen ? 0 : Math.max(0, 900 - (performance.now() - started));
+      setTimeout(() => {
+        loaderEl.classList.add('is-done');
+        store.set(sessionStorage, SEEN, '1');
+        setTimeout(() => {
+          root.classList.add('is-revealed');
+          corridor.reveal();
+          caption.classList.add('is-on');
+          if (store.get(localStorage, GUIDED) !== '1') setTimeout(() => guide.classList.add('is-on'), 1600);
+        }, seen ? 0 : 450);
+      }, wait);
+    };
+    corridor.ready.then(lift);
+    const failSafe = setTimeout(lift, 9000);
+
+    const onTick = (e) => corridor.goToStory(Number(e.currentTarget.dataset.tick));
+    ticks.forEach((b) => b.addEventListener('click', onTick));
+
+    return () => {
+      clearTimeout(failSafe);
+      clearTimeout(swapTimer);
+      ticks.forEach((b) => b.removeEventListener('click', onTick));
+      setCursor(null);
+      corridor.destroy();
+      if (window.__corridor === corridor) delete window.__corridor;
+    };
+  }
+</script>

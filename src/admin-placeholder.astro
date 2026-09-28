@@ -1,0 +1,23 @@
+---
+import Base from './layouts/Base.astro';
+---
+
+<Base title="Studio — not connected" noindex>
+  <main class="page narrow admin-note">
+    <p class="label">/admin</p>
+    <h1 class="display">The studio isn’t connected yet.</h1>
+    <ol class="steps">
+      <li>Create a free project at <a href="https://www.sanity.io/manage" rel="noopener">sanity.io/manage</a>.</li>
+      <li>Set <code>SANITY_PROJECT_ID</code> in <code>src/lib/config.js</code> (or the <code>PUBLIC_SANITY_PROJECT_ID</code> env var) and redeploy.</li>
+      <li>In the Sanity project, add this site’s URL under <em>API → CORS origins</em> (allow credentials).</li>
+      <li>Come back here — the full Studio will load, ready to add stories.</li>
+    </ol>
+    <p class="muted">Until then the site runs on bundled demo stories.</p>
+  </main>
+</Base>
+
+<style>
+  .admin-note { padding-top: 22vh; }
+  .steps { margin: 2.5rem 0; padding-left: 1.2rem; line-height: 1.9; color: var(--ink-2); }
+  .steps code { font-family: var(--mono); font-size: .85em; color: var(--ink); }
+</style>

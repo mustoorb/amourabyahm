@@ -1,0 +1,39 @@
+---
+import Base from '../../layouts/Base.astro';
+
+const concepts = [
+  { href: '/lab/corridor', n: '01', title: 'Memory Corridor', status: 'Live on home', note: 'Glide forward through floating photos & films. Depth-of-field, snap-to-frame, films play as you arrive. This page adds a live tuning panel for the feel knobs.' },
+  { href: '/lab/scroll', n: '02', title: 'Cinematic Scroll-Story', status: 'Prototype', note: 'Each wedding a full-bleed scene revealed on scroll with parallax and big type. The same language drives the story pages.' },
+  { href: '/lab/wall', n: '03', title: 'Infinite Memory Wall', status: 'Prototype', note: 'Drag through an endless, layered parallax field of photographs.' },
+];
+---
+
+<Base title="Lab" noindex>
+  <main class="page lab">
+    <p class="label label--dim">Lab — hero gallery concepts</p>
+    <h1 class="display">Concepts.</h1>
+    <ul class="concepts">
+      {
+        concepts.map((c) => (
+          <li>
+            <a href={c.href}>
+              <span class="label">{c.n}</span>
+              <span class="display display--sm">{c.title}</span>
+              <span class="label label--dim">{c.status}</span>
+              <p>{c.note}</p>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    <p class="label label--dim note">Not in this repo yet: Film-Reel Ribbon, and the parked curved-card sphere from the previous build.</p>
+  </main>
+</Base>
+
+<style>
+  .concepts { list-style: none; margin: 60px 0 0; padding: 0; display: grid; gap: 0; }
+  .concepts a { display: grid; grid-template-columns: 60px 1fr auto; gap: 8px 24px; align-items: baseline; padding: 28px 0; border-top: 1px solid var(--line); transition: padding 0.6s var(--ease); }
+  .concepts a:hover { padding-left: 14px; }
+  .concepts p { grid-column: 2 / -1; margin: 0; color: var(--ink-2); max-width: 60ch; }
+  .note { margin-top: 60px; }
+</style>

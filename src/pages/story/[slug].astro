@@ -1,0 +1,221 @@
+---
+import Film from '../../components/Film.astro';
+import Lightbox from '../../components/Lightbox.astro';
+import Base from '../../layouts/Base.astro';
+import { AMOURA_CHAT_URL } from '../../lib/config.js';
+import { embedUrl, getStories, metaLine } from '../../lib/content.js';
+import { heroName } from '../../lib/vt.js';
+
+export async function getStaticPaths() {
+  const stories = await getStories();
+  return stories.map((story, i) => ({
+    params: { slug: story.slug },
+    props: { story, next: stories[(i + 1) % stories.length], isNewest: i === 0 && story.featured },
+  }));
+}
+
+const { story, next, isNewest } = Astro.props;
+const meta = metaLine(story);
+
+// Editorial rhythm: runs of photos become a masonry block; films break out full-width.
+type Block = { kind: 'photos'; items: { m: any; k: number }[] } | { kind: 'film'; m: any };
+const blocks: Block[] = [];
+let k = 0;
+for (const m of story.media) {
+  if (m.type === 'video') blocks.push({ kind: 'film', m });
+  else {
+    const lastBlock = blocks.at(-1);
+    if (lastBlock?.kind === 'photos') lastBlock.items.push({ m, k: k++ });
+    else blocks.push({ kind: 'photos', items: [{ m, k: k++ }] });
+  }
+}
+const heroFilm = story.heroLoop ? story.media.find((m: any) => m.type === 'video') : null;
+const external = /^https?:/.test(AMOURA_CHAT_URL);
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWork',
+  name: `${story.title} — amoura`,
+  description: story.desc,
+  image: story.cover,
+  dateCreated: String(story.year),
+  keywords: story.tags.join(', '),
+  creator: { '@type': 'Organization', name: 'amoura' },
+};
+---
+
+<Base title={story.title} description={story.desc || `${story.title} — a wedding story by amoura.`} image={story.cover} jsonLd={jsonLd}>
+  <article class="story">
+    <header class="hero">
+      <div class="hero__media" data-hero-parallax>
+        <img
+          class="hero__img"
+          src={story.cover}
+          alt={`${story.title} — cover`}
+          fetchpriority="high"
+          decoding="async"
+          style={`view-transition-name:${heroName(story.slug)};${story.coverLqip ? `background-image:url(${story.coverLqip})` : ''}`}
+        />
+        {heroFilm && <div class="hero__loop" data-hero-loop data-src={embedUrl(heroFilm, { ambient: true })} />}
+      </div>
+      <div class="hero__shade" aria-hidden="true"></div>
+      <div class="hero__text">
+        <p class="label hero__brand">
+          {story.brand}
+          {isNewest && <span class="badge-new">NEW</span>}
+        </p>
+        <h1 class="display hero__title">{story.title}</h1>
+        <p class="label dot-sep hero__meta">{meta.map((x) => <span>{x}</span>)}</p>
+      </div>
+      <span class="hero__cue label label--dim" aria-hidden="true">Scroll</span>
+    </header>
+
+    {
+      story.desc && (
+        <section class="intro page">
+          <p class="label label--dim" data-reveal>The story</p>
+          <p class="intro__text" data-reveal style="--d:.08s">{story.desc}</p>
+        </section>
+      )
+    }
+
+    <section class="gallery page" aria-label="Photos and films">
+      {
+        blocks.map((b) =>
+          b.kind === 'film' ? (
+            <div class="gallery__film" data-reveal>
+              <Film film={b.m} title={story.title} />
+            </div>
+          ) : (
+            <div class:list={['masonry', `masonry--${Math.min(3, b.items.length)}`]}>
+              {b.items.map(({ m, k }) => (
+                <button
+                  class="tile"
+                  type="button"
+                  data-reveal
+                  style={`--d:${(k % 3) * 0.08}s`}
+                  data-lb-index={k}
+                  data-full={m.full}
+                  data-alt={m.alt || ''}
+                  data-cursor="view"
+                  data-cursor-label="View"
+                  aria-label={`Open photo ${k + 1}`}
+                >
+                  <span class="tile__frame" style={`aspect-ratio:${m.aspect};${m.lqip ? `background-image:url(${m.lqip})` : ''}`}>
+                    <img src={m.thumb} alt={m.alt || ''} loading={k < 3 ? 'eager' : 'lazy'} decoding="async" />
+                  </span>
+                </button>
+              ))}
+            </div>
+          ),
+        )
+      }
+    </section>
+
+    <section class="cta page">
+      <p class="label label--dim" data-reveal>Planning your day?</p>
+      <p class="display display--md" data-reveal style="--d:.08s">Let’s make yours.</p>
+      <a class="pill pill--rose" href={AMOURA_CHAT_URL} {...(external ? { target: '_blank', rel: 'noopener' } : {})} data-reveal style="--d:.16s">Let’s Talk</a>
+    </section>
+
+    {
+      next && next.slug !== story.slug && (
+        <a class="next" href={`/story/${next.slug}`} data-cursor="view" data-cursor-label="Next →">
+          <img class="next__img" src={next.coverSm} alt="" loading="lazy" decoding="async" style={`view-transition-name:${heroName(next.slug)}`} />
+          <span class="next__shade" aria-hidden="true" />
+          <span class="next__text">
+            <span class="label">Next story →</span>
+            <span class="display display--md">{next.title}</span>
+            <span class="label label--dim">{metaLine(next).slice(0, -2).join(' · ')}</span>
+          </span>
+        </a>
+      )
+    }
+  </article>
+  <Lightbox />
+</Base>
+
+<style>
+  .hero { position: relative; height: 100svh; min-height: 560px; overflow: hidden; }
+  .hero__media { position: absolute; inset: 0; will-change: transform; }
+  .hero__img { width: 100%; height: 100%; object-fit: cover; background-size: cover; background-position: center; filter: saturate(0.92) sepia(0.06); }
+  .hero__loop { position: absolute; inset: 0; opacity: 0; transition: opacity 2s var(--ease); overflow: hidden; }
+  .hero__loop:global(.is-on) { opacity: 1; }
+  .hero__loop :global(iframe) { position: absolute; top: 50%; left: 50%; width: max(100%, calc(100svh * 16 / 9)); height: max(100%, calc(100vw * 9 / 16)); transform: translate(-50%, -50%); border: 0; pointer-events: none; }
+  .hero__shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(12, 10, 9, 0.92) 0%, rgba(12, 10, 9, 0.25) 45%, rgba(12, 10, 9, 0.45) 100%); }
+  .hero__text { position: absolute; left: var(--gutter); right: var(--gutter); bottom: clamp(90px, 12vh, 140px); display: grid; gap: 22px; animation: rise 1.4s var(--ease) 0.25s both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(30px); } }
+  .hero__brand { display: flex; align-items: center; gap: 12px; }
+  .hero__title { font-size: clamp(3.4rem, 11vw, 10.5rem); max-width: 14ch; }
+  .hero__meta { display: flex; flex-wrap: wrap; row-gap: 6px; }
+  .hero__cue { position: absolute; right: var(--gutter); bottom: 90px; writing-mode: vertical-rl; letter-spacing: 0.3em; }
+
+  .intro { display: grid; grid-template-columns: minmax(140px, 1fr) 3fr; gap: 40px; padding-top: 18vh; padding-bottom: 12vh; }
+  .intro__text { margin: 0; font-family: var(--serif); font-style: italic; font-weight: 300; font-size: clamp(1.8rem, 3.4vw, 3.2rem); line-height: 1.15; max-width: 24ch; }
+
+  .gallery { padding-top: 0; display: grid; gap: clamp(16px, 2vw, 28px); }
+  .masonry { columns: 3 300px; column-gap: clamp(16px, 2vw, 28px); }
+  .masonry--2 { columns: 2 300px; }
+  .masonry--1 { columns: 1; max-width: 980px; margin: 0 auto; width: 100%; }
+  .tile { display: block; width: 100%; margin: 0 0 clamp(16px, 2vw, 28px); break-inside: avoid; }
+  .tile__frame { display: block; position: relative; overflow: hidden; border-radius: 4px; background: var(--bg-3) center / cover no-repeat; }
+  .tile__frame img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.4s var(--ease), filter 0.8s var(--ease); filter: saturate(0.94); }
+  .tile:hover .tile__frame img { transform: scale(1.035); filter: saturate(1.05); }
+  .gallery__film { margin: clamp(20px, 4vw, 60px) 0; }
+
+  .cta { display: grid; justify-items: center; gap: 22px; text-align: center; padding-top: 16vh; padding-bottom: 16vh; }
+
+  .next { position: relative; display: block; height: 78svh; min-height: 420px; overflow: hidden; }
+  .next__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.02); transition: transform 1.8s var(--ease); filter: saturate(0.85); }
+  .next:hover .next__img { transform: scale(1.07); }
+  .next__shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(12, 10, 9, 0.9), rgba(12, 10, 9, 0.35)); }
+  .next__text { position: absolute; left: var(--gutter); bottom: 110px; display: grid; gap: 16px; }
+
+  @media (max-width: 760px) {
+    .intro { grid-template-columns: 1fr; gap: 18px; padding-top: 12vh; }
+    .masonry { columns: 1; }
+    .hero__cue { display: none; }
+  }
+</style>
+
+<script>
+  import { onPage, prefersReducedMotion, saveData } from '../../scripts/lifecycle.js';
+
+  onPage(() => {
+    const media = document.querySelector('[data-hero-parallax]');
+    if (!media) return;
+    const reduced = prefersReducedMotion();
+
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const y = Math.min(window.scrollY, window.innerHeight);
+        media.style.transform = `translate3d(0, ${y * 0.35}px, 0) scale(${1 + y / window.innerHeight / 12})`;
+      });
+    };
+    if (!reduced) window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Muted hero film loop (opt-in per story), desktop only.
+    const loop = document.querySelector('[data-hero-loop]');
+    let loopTimer = 0;
+    if (loop && !reduced && !saveData() && window.matchMedia('(min-width: 900px)').matches) {
+      loopTimer = window.setTimeout(() => {
+        const iframe = document.createElement('iframe');
+        iframe.src = loop.dataset.src;
+        iframe.allow = 'autoplay; fullscreen';
+        iframe.tabIndex = -1;
+        iframe.setAttribute('aria-hidden', 'true');
+        iframe.title = 'Film loop';
+        iframe.addEventListener('load', () => setTimeout(() => loop.classList.add('is-on'), 1200));
+        loop.append(iframe);
+      }, 1400);
+    }
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      clearTimeout(loopTimer);
+      cancelAnimationFrame(raf);
+    };
+  });
+</script>
