@@ -12,7 +12,6 @@
   "dependencies": {
     "@astrojs/react": "^7.0.0",
     "@astrojs/sitemap": "^3.7.4",
-    "@astrojs/vercel": "^11.0.11",
     "@sanity/astro": "^3.5.1",
     "@sanity/client": "^8.8.0",
     "@sanity/image-url": "^2.1.1",
@@ -23,5 +22,8 @@
     "sanity": "^6.16.0",
     "styled-components": "^6.5.3",
     "three": "^0.186.1"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }

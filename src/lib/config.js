@@ -1,7 +1,7 @@
 // Site-wide config knobs. Safe to import from astro.config.mjs, server code and the browser.
 //
 // Each value can be set here directly, or overridden with the matching PUBLIC_* env var
-// (e.g. in Vercel → Project → Settings → Environment Variables).
+// (e.g. in Netlify → Site configuration → Environment variables).
 
 const env = import.meta.env ?? {};
 const penv = typeof process !== 'undefined' && process.env ? process.env : {};

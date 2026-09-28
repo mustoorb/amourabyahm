@@ -1,7 +1,7 @@
 # amoura®
 
 Cinematic wedding films & photographs — the studio site.
-Astro (static) · Three.js · Sanity CMS · deployed on Vercel.
+Astro (static) · Three.js · Sanity CMS · deployed on Netlify.
 
 ```bash
 npm install
@@ -82,7 +82,7 @@ Order is newest-first: featured → year → created date. `SPHERE_CAP` (in the 
 
 | Where | What |
 |---|---|
-| `src/lib/config.js` | `SANITY_PROJECT_ID`, `SANITY_DATASET`, `AMOURA_CHAT_URL` (every “Let’s Talk”), brand line, clocks. Each can also come from a `PUBLIC_*` env var (see `.env.example`). |
+| `src/lib/config.js` | `SANITY_PROJECT_ID`, `SANITY_DATASET`, `AMOURA_CHAT_URL` (every “Let’s Talk”), brand line, clocks. Each can also come from a `PUBLIC_*` env var (see `.env.example`; on Netlify, set them under Site configuration → Environment variables). |
 | `src/lib/content.js` | `SPHERE_CAP` — hero story count. |
 | `src/scripts/corridor.js` | `KNOBS` — gallery feel. |
 | `astro.config.mjs` | `site` (via `SITE_URL`) — canonical/OG/sitemap domain. |
@@ -92,15 +92,15 @@ Order is newest-first: featured → year → created date. `SPHERE_CAP` (in the 
 1. **Sanity**
    - Create a free project at sanity.io/manage.
    - Set `SANITY_PROJECT_ID` (or `PUBLIC_SANITY_PROJECT_ID`).
-   - Under **API → CORS origins**, add `http://localhost:4321` and the production URL, with credentials allowed.
+   - Under **API → CORS origins**, add `http://localhost:4321` and the production URL (your `*.netlify.app` address and/or custom domain), with credentials allowed.
    - Add stories at `/admin`.
 2. Delete the demo `makeArchive()` filler from `src/data.js` (it's unused once Sanity is on).
 3. Replace the About copy and people in `src/data.js` (`studio`). They're placeholders.
 4. Set the real **`AMOURA_CHAT_URL`**. Until then, “Let’s Talk” points to `/about#contact`.
-5. Set the real **domain** (`SITE_URL` env var in Vercel, or edit `astro.config.mjs`).
-6. **Deploy:** import the repo in Vercel. The framework (Astro) is auto-detected and the output is fully static, so no adapter is needed. The Studio uses hash routing, so `/admin` is a static page too.
-7. Optional: add a Sanity webhook that calls a Vercel deploy hook, so CMS edits auto-publish.
-8. Add Vercel Analytics, then do a final a11y/perf pass.
+5. Set the real **domain** (`SITE_URL` env var in Netlify → Site configuration → Environment variables, or edit `astro.config.mjs`).
+6. **Deploy on Netlify:** Add new site → Import from Git → pick `amourabyahm`, branch `main`. `netlify.toml` already sets the build command (`npm run build`), the publish directory (`dist`) and Node 22, so leave those fields as detected. The output is fully static (no adapter or functions). The Studio uses hash routing, so `/admin` is a static page too.
+7. Optional: add a Sanity webhook that calls a Netlify build hook (Site configuration → Build & deploy → Build hooks), so CMS edits auto-publish.
+8. Add analytics (e.g. Netlify Analytics), then do a final a11y/perf pass.
 
 ### Notes on films
 
