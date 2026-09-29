@@ -11,6 +11,7 @@
   <button class="lightbox__close label" type="button" data-lb-close>Close <span aria-hidden="true">✕</span></button>
   <button class="lightbox__nav lightbox__nav--prev" type="button" data-lb-prev aria-label="Previous photo">‹</button>
   <button class="lightbox__nav lightbox__nav--next" type="button" data-lb-next aria-label="Next photo">›</button>
+  <p class="lightbox__hint label" aria-hidden="true">Swipe · pull down to close</p>
 </dialog>
 
 <style>
@@ -27,10 +28,17 @@
   .lightbox__nav:hover { color: var(--ink); }
   .lightbox__nav--prev { left: 8px; }
   .lightbox__nav--next { right: 8px; }
+  .lightbox__img { will-change: transform; }
+  .lightbox__img.is-dragging { transition: none; }
+  :global(html.lb-open), :global(html.lb-open body) { overflow: hidden; }
   @media (max-width: 760px) {
-    .lightbox__stage { inset: 60px 0 40px; }
-    .lightbox__nav { top: auto; bottom: 8px; transform: none; height: 56px; font-size: 40px; }
+    .lightbox__stage { inset: calc(env(safe-area-inset-top) + 56px) 0 calc(env(safe-area-inset-bottom) + 72px); touch-action: none; }
+    .lightbox__count { top: calc(env(safe-area-inset-top) + 20px); }
+    .lightbox__close { top: calc(env(safe-area-inset-top) + 6px); right: 8px; min-width: 44px; min-height: 44px; padding: 0 12px; }
+    .lightbox__nav { top: auto; bottom: calc(env(safe-area-inset-bottom) + 8px); transform: none; width: 64px; height: 56px; font-size: 40px; }
+    .lightbox__hint { display: block; }
   }
+  .lightbox__hint { display: none; position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 28px); transform: translateX(-50%); color: var(--ink-3); white-space: nowrap; }
 </style>
 
 <script>
@@ -80,6 +88,7 @@
 
     const open = (e) => {
       lastTrigger = e.currentTarget;
+      document.documentElement.classList.add('lb-open');
       dlg.showModal();
       show(Number(lastTrigger.dataset.lbIndex));
     };
@@ -91,19 +100,38 @@
       if (e.key === 'ArrowLeft') prev();
       else if (e.key === 'ArrowRight') next();
     };
-    const onClose = () => lastTrigger?.focus({ preventScroll: true });
+    const onClose = () => {
+      document.documentElement.classList.remove('lb-open');
+      lastTrigger?.focus({ preventScroll: true });
+    };
     const onBackdrop = (e) => {
       if (e.target === dlg || e.target === stage) close();
     };
 
-    // swipe
-    let sx = 0, sy = 0, active = false;
-    const down = (e) => { active = true; sx = e.clientX; sy = e.clientY; };
+    // swipe left/right to browse, pull down to close; the photo follows your finger
+    let sx = 0, sy = 0, active = false, axis = null;
+    const down = (e) => { active = true; axis = null; sx = e.clientX; sy = e.clientY; };
+    const move = (e) => {
+      if (!active) return;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      if (!axis && Math.hypot(dx, dy) > 8) axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      if (!axis) return;
+      img.classList.add('is-dragging');
+      if (axis === 'x') img.style.transform = `translate3d(${dx}px, 0, 0)`;
+      else if (dy > 0) {
+        img.style.transform = `translate3d(0, ${dy}px, 0) scale(${1 - Math.min(dy / 1200, 0.2)})`;
+        dlg.style.backgroundColor = `rgba(8, 7, 6, ${0.97 - Math.min(dy / 600, 0.5)})`;
+      }
+    };
     const up = (e) => {
       if (!active) return;
       active = false;
+      img.classList.remove('is-dragging');
+      img.style.transform = '';
+      dlg.style.backgroundColor = '';
       const dx = e.clientX - sx, dy = e.clientY - sy;
-      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) (dx < 0 ? next : prev)();
+      if (axis === 'x' && Math.abs(dx) > 50) (dx < 0 ? next : prev)();
+      else if (axis === 'y' && dy > 90) close();
     };
 
     triggers.forEach((t) => t.addEventListener('click', open));
@@ -113,11 +141,14 @@
     dlg.addEventListener('click', onBackdrop);
     dlg.addEventListener('close', onClose);
     stage.addEventListener('pointerdown', down);
+    stage.addEventListener('pointermove', move);
     stage.addEventListener('pointerup', up);
+    stage.addEventListener('pointercancel', up);
     window.addEventListener('keydown', onKey);
 
     return () => {
       window.removeEventListener('keydown', onKey);
+      document.documentElement.classList.remove('lb-open');
       if (dlg.open) dlg.close();
     };
   });

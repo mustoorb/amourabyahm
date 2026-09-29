@@ -381,7 +381,7 @@ export function mountCorridor(root, opts) {
     vw = host.clientWidth || window.innerWidth;
     vh = host.clientHeight || window.innerHeight;
     isMobile = mobileQuery.matches;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.75 : 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2));
     renderer.setSize(vw, vh, false);
     camera.aspect = vw / vh;
     camera.fov = isMobile ? K.fov + 8 : K.fov;
@@ -519,7 +519,7 @@ export function mountCorridor(root, opts) {
   let anchor = Math.round(t); // stop the current gesture started from
   const markInput = () => {
     const now = performance.now();
-    if (now - lastInput > K.snapDelay) anchor = Math.round(t);
+    if (now - lastInput > K.snapDelay && !drag?.touch) anchor = Math.round(t);
     lastInput = now;
     if (!interacted) {
       interacted = true;
@@ -540,16 +540,26 @@ export function mountCorridor(root, opts) {
 
   function onPointerDown(e) {
     if (e.button !== 0) return;
-    drag = { id: e.pointerId, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(), moved: 0, v: 0 };
+    const touch = e.pointerType !== 'mouse';
+    drag = { id: e.pointerId, touch, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(), moved: 0, v: 0 };
     vel = 0;
-    renderer.domElement.setPointerCapture?.(e.pointerId);
+    if (touch) {
+      // Each swipe is measured from the frame you're heading to, so quick
+      // successive swipes keep stepping forward.
+      anchor = Math.round(target);
+      pointer.inside = false;
+    }
+    try {
+      renderer.domElement.setPointerCapture(e.pointerId);
+    } catch {}
   }
   function onPointerMove(e) {
     pointer.x = e.clientX;
     pointer.y = e.clientY;
     pointer.nx = (e.clientX / vw) * 2 - 1;
     pointer.ny = -(e.clientY / vh) * 2 + 1;
-    pointer.inside = true;
+    // Hover (glow, cursor label) is a mouse thing; on touch it would stick after lifting.
+    pointer.inside = e.pointerType === 'mouse';
     if (!drag || e.pointerId !== drag.id) return;
     const dx = e.clientX - drag.x;
     const dy = e.clientY - drag.y;
@@ -572,7 +582,17 @@ export function mountCorridor(root, opts) {
   function onPointerUp(e) {
     if (!drag || e.pointerId !== drag.id) return;
     const wasClick = drag.moved < 7;
-    vel = reduced ? 0 : clamp(drag.v, -0.35, 0.35);
+    if (drag.touch && !wasClick) {
+      // Phones: one swipe = one frame, like flicking through stories.
+      // A long drag keeps where you took it and simply settles on the nearest frame.
+      const dir = target - anchor;
+      vel = 0;
+      if (Math.abs(dir) < 1.4) target = Math.abs(dir) > K.nudge ? anchor + Math.sign(dir) : anchor;
+      else target = Math.round(target);
+      target = target > lastIndex ? endT : clamp(target, 0, lastIndex);
+    } else {
+      vel = reduced ? 0 : clamp(drag.v, -0.35, 0.35);
+    }
     drag = null;
     opts.onDrag?.(false);
     markInput();

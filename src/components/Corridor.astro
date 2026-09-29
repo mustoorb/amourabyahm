@@ -41,6 +41,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
   </ol>
 
   <div class="corridor__caption" data-caption aria-live="polite">
+    <span class="corridor__progress" aria-hidden="true"><i data-cap-progress style={`transform:scaleX(${1 / Math.max(1, stories.length)})`}></i></span>
     <p class="label corridor__cap-top">
       <span data-cap-index>01</span><span class="label--dim"> / {pad(stories.length)}</span>
       <span class="badge-new" data-cap-new>NEW</span>
@@ -160,9 +161,18 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
   :global(.morph) { position: fixed; z-index: 100; object-fit: cover; border-radius: 6px; pointer-events: none; }
 
+  .corridor__progress { display: none; }
+
   @media (max-width: 760px) {
-    .corridor__caption { bottom: 84px; gap: 10px; }
+    /* sits just above the tab bar */
+    .corridor__caption { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 70px); right: var(--gutter); max-width: none; gap: 10px; }
+    .corridor__cap-title { font-size: clamp(2.2rem, 10vw, 2.8rem); }
+    [data-cap-meta] { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .corridor__ticks { display: none; }
+    .corridor__progress { display: block; height: 1px; background: var(--line); overflow: hidden; margin-bottom: 4px; }
+    .corridor__progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--rose), var(--gold)); transform-origin: left; transition: transform 0.8s var(--ease); }
+    .corridor__guide { width: min(300px, calc(100vw - 48px)); padding: 22px 20px; }
+    .corridor__end .display { font-size: 2rem; }
   }
 </style>
 
@@ -209,6 +219,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
     const capMeta = root.querySelector('[data-cap-meta]');
     const capLinks = root.querySelectorAll('[data-cap-link]');
     const capTitle = root.querySelector('.corridor__cap-title a');
+    const capProgress = root.querySelector('[data-cap-progress]');
     const ticks = [...root.querySelectorAll('[data-tick]')];
     const endEl = root.querySelector('[data-end]');
     const guide = root.querySelector('[data-guide]');
@@ -238,6 +249,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
         capTitle.textContent = s.title;
         capMeta.textContent = meta(s);
         capLinks.forEach((a) => a.setAttribute('href', `/story/${s.slug}`));
+        if (capProgress) capProgress.style.transform = `scaleX(${(si + 1) / stories.length})`;
         ticks.forEach((b, i) => (i === si ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current')));
         caption.classList.remove('is-swapping');
       };

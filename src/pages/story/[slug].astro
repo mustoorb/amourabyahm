@@ -159,21 +159,35 @@ const jsonLd = {
   .tile { display: block; width: 100%; margin: 0 0 clamp(16px, 2vw, 28px); break-inside: avoid; }
   .tile__frame { display: block; position: relative; overflow: hidden; border-radius: 4px; background: var(--bg-3) center / cover no-repeat; }
   .tile__frame img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.4s var(--ease), filter 0.8s var(--ease); filter: saturate(0.94); }
-  .tile:hover .tile__frame img { transform: scale(1.035); filter: saturate(1.05); }
+  @media (hover: hover) { .tile:hover .tile__frame img { transform: scale(1.035); filter: saturate(1.05); } }
   .gallery__film { margin: clamp(20px, 4vw, 60px) 0; }
 
   .cta { display: grid; justify-items: center; gap: 22px; text-align: center; padding-top: 16vh; padding-bottom: 16vh; }
 
   .next { position: relative; display: block; height: 78svh; min-height: 420px; overflow: hidden; }
   .next__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.02); transition: transform 1.8s var(--ease); filter: saturate(0.85); }
-  .next:hover .next__img { transform: scale(1.07); }
+  @media (hover: hover) { .next:hover .next__img { transform: scale(1.07); } }
   .next__shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(12, 10, 9, 0.9), rgba(12, 10, 9, 0.35)); }
   .next__text { position: absolute; left: var(--gutter); bottom: 110px; display: grid; gap: 16px; }
 
   @media (max-width: 760px) {
-    .intro { grid-template-columns: 1fr; gap: 18px; padding-top: 12vh; }
-    .masonry { columns: 1; }
+    .hero__text { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px); gap: 16px; }
+    .hero__title { font-size: clamp(3rem, 15vw, 4.4rem); }
     .hero__cue { display: none; }
+    .intro { grid-template-columns: 1fr; gap: 14px; padding-top: 72px; padding-bottom: 56px; }
+    .intro__text { font-size: 1.75rem; }
+    /* two-up photo grid; a lone photo runs full width */
+    .gallery { gap: 8px; }
+    .masonry, .masonry--2 { columns: 2; column-gap: 8px; }
+    .masonry--1 { columns: 1; }
+    .tile { margin-bottom: 8px; }
+    .tile__frame { border-radius: 3px; }
+    /* films go edge to edge */
+    .gallery__film { margin: 16px calc(-1 * var(--gutter)); }
+    .gallery__film :global(.film) { border-radius: 0; }
+    .cta { padding-top: 96px; padding-bottom: 96px; }
+    .next { height: 62svh; min-height: 380px; }
+    .next__text { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px); }
   }
 </style>
 
