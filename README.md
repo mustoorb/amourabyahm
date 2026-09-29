@@ -107,6 +107,26 @@ Order is newest-first: featured → year → created date. `SPHERE_CAP` (in the 
 - A film preview in the corridor and the optional hero loop use Vimeo `background=1`. The video owner needs a Vimeo Plus plan or higher for that player to render. YouTube embeds always work.
 - Film posters: an uploaded poster in Sanity always works. Otherwise the build uses the provider thumbnail (Vimeo via oEmbed, YouTube via `i.ytimg.com`). If a thumbnail host blocks cross-origin use, the corridor draws a titled placeholder frame for that film.
 
+## Home v2 preview (`/lab/home-v2`, `/lab/archive-v2`)
+
+A sales-focused home page, built as a film in three acts. It isn't the live home page yet; it's a preview to compare against the current one.
+
+- **I · the spiral** (`src/scripts/vortex.js`, knobs in `VORTEX`): a Cosmos-style vortex of wedding frames. It rushes in, calms behind the headline and a Let's Talk button, and scrolling flies you into it.
+- **II · the stories:** Inkwell-style scroll scenes, one per featured wedding (max 6).
+  - Each scene opens from a framed card to full screen over a warm dusk gradient, and the title rises in.
+  - Muted film loops play on desktop.
+  - Couple quotes, stats and a venue marquee sit between scenes.
+  - A **pathfinder** at the top shows the chapter.
+- **III · yours:** the offer ("Collections from…", booking year, what's included), the process, and the **enquiry form** (`src/components/Enquire.astro`).
+- **Always one tap away:** Let's Talk (goes to the form) and a WhatsApp button. Desktop gets inertial smooth scrolling (Lenis); phones keep native scrolling.
+- **Archive v2:** a Cash App-style infinite canvas on desktop. Drag or scroll to wander, pinch or +/− to zoom, filter by tag. Phones get the two-up grid.
+
+To finish it:
+1. **Sample content:** quotes, stats, venues and the offer are placeholders in `src/data.js` → `sales`. Replace them, then set `sample: false` to remove the "Sample" tags.
+2. **WhatsApp:** set `PUBLIC_WHATSAPP_NUMBER` (digits, international format) in Netlify env vars, or in `src/lib/config.js`. Until then, WhatsApp buttons go to the form.
+3. **Enquiries:** the form uses **Netlify Forms**. In Netlify → Forms, make sure form detection is enabled, then add an email notification (Forms → Settings → Form notifications) so each enquiry reaches your inbox. Submissions only work on the deployed site, not in local dev.
+4. **Going live:** when you're happy, the v2 page becomes `/` and the corridor moves to its own route ("Step inside").
+
 ## Not in this repo
 
 - The Film-Reel Ribbon concept.

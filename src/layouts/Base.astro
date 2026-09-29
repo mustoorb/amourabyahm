@@ -12,6 +12,7 @@ interface Props {
   chrome?: 'home' | 'page' | 'none';
   view?: 'gallery' | 'archive' | null;
   jsonLd?: Record<string, unknown>;
+  talk?: string;
 }
 
 const {
@@ -23,6 +24,7 @@ const {
   chrome = 'page',
   view = null,
   jsonLd,
+  talk,
 } = Astro.props;
 
 const fullTitle = title ? `${title} — amoura®` : 'amoura® — wedding films & photographs';
@@ -60,7 +62,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <ClientRouter fallback="animate" />
   </head>
   <body class={bodyClass}>
-    {chrome !== 'none' && <Chrome variant={chrome} view={view} />}
+    {chrome !== 'none' && <Chrome variant={chrome} view={view} talk={talk} />}
     <slot />
     <div class="vignette" aria-hidden="true"></div>
     <div class="grain" aria-hidden="true"></div>

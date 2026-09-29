@@ -22,6 +22,15 @@ export const SANITY_API_VERSION = '2025-01-01';
  */
 export const AMOURA_CHAT_URL = read('PUBLIC_AMOURA_CHAT_URL', '/about#contact');
 
+/**
+ * WhatsApp number for the "WhatsApp" buttons, international format, digits only (e.g. '971501234567').
+ * TODO: set it. While empty, WhatsApp buttons fall back to the enquiry form.
+ */
+export const WHATSAPP_NUMBER = read('PUBLIC_WHATSAPP_NUMBER', '').replace(/\D/g, '');
+
+/** Pre-filled first message for WhatsApp. */
+export const WHATSAPP_MESSAGE = 'Hello amoura — we’re getting married and would love to talk.';
+
 /** Brand strings used across the chrome. */
 export const BRAND = {
   name: 'amoura',

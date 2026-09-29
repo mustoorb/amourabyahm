@@ -4,12 +4,15 @@ import { AMOURA_CHAT_URL, BRAND } from '../lib/config.js';
 interface Props {
   variant?: 'home' | 'page';
   view?: 'gallery' | 'archive' | null;
+  /** Override where "Let's Talk" points (e.g. an on-page enquiry form). */
+  talk?: string;
 }
-const { variant = 'page', view = null } = Astro.props;
+const { variant = 'page', view = null, talk } = Astro.props;
+const talkHref = talk || AMOURA_CHAT_URL;
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const isWork = path === '/' || path.startsWith('/story') || path.startsWith('/archive');
 const isGallery = path === '/' || path.startsWith('/story');
-const external = /^https?:/.test(AMOURA_CHAT_URL);
+const external = /^https?:/.test(talkHref);
 const talkAttrs = external ? { target: '_blank', rel: 'noopener' } : {};
 ---
 
@@ -34,7 +37,7 @@ const talkAttrs = external ? { target: '_blank', rel: 'noopener' } : {};
       <span class="sound__word">Sound</span> <span class="sound__state">[<span data-sound-state>off</span>]</span>
       <span class="sound__bars" aria-hidden="true"><i></i><i></i><i></i></span>
     </button>
-    <a class="pill pill--rose talk-top" href={AMOURA_CHAT_URL} {...talkAttrs}>Let’s Talk</a>
+    <a class="pill pill--rose talk-top" href={talkHref} {...talkAttrs}>Let’s Talk</a>
   </div>
 </header>
 
@@ -42,7 +45,7 @@ const talkAttrs = external ? { target: '_blank', rel: 'noopener' } : {};
   <ul class="nav label">
     <li><a href="/" aria-current={isWork ? 'page' : undefined}>Work</a></li>
     <li><a href="/about" aria-current={path === '/about' ? 'page' : undefined}>About</a></li>
-    <li><a href={AMOURA_CHAT_URL} {...talkAttrs}>Let’s Talk</a></li>
+    <li><a href={talkHref} {...talkAttrs}>Let’s Talk</a></li>
   </ul>
   {
     view && (
@@ -60,7 +63,7 @@ const talkAttrs = external ? { target: '_blank', rel: 'noopener' } : {};
   <a href="/" aria-current={isGallery ? 'page' : undefined}>Work</a>
   <a href="/archive" aria-current={path === '/archive' ? 'page' : undefined}>Archive</a>
   <a href="/about" aria-current={path === '/about' ? 'page' : undefined}>About</a>
-  <a class="tabbar__talk" href={AMOURA_CHAT_URL} {...talkAttrs}>Let’s Talk</a>
+  <a class="tabbar__talk" href={talkHref} {...talkAttrs}>Let’s Talk</a>
 </nav>
 
 <style>

@@ -1,0 +1,161 @@
+---
+// Short enquiry form, handled by Netlify Forms (no server code): submissions appear in
+// Netlify → Forms, with email notifications if you switch them on there.
+import { WHATSAPP_MESSAGE, WHATSAPP_NUMBER } from '../lib/config.js';
+
+const whatsapp = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}` : null;
+---
+
+<div class="enquire" data-enquire>
+  <form name="enquiry" method="POST" data-netlify="true" netlify-honeypot="company" class="enquire__form" data-enquire-form novalidate>
+    <input type="hidden" name="form-name" value="enquiry" />
+    <p class="enquire__trap" aria-hidden="true"><label>Company <input name="company" tabindex="-1" autocomplete="off" /></label></p>
+
+    <div class="field field--wide">
+      <label for="f-names" class="label">Your names</label>
+      <input id="f-names" name="names" required autocomplete="name" placeholder="Léa & Karim" />
+    </div>
+    <div class="field">
+      <label for="f-email" class="label">Email</label>
+      <input id="f-email" name="email" type="email" required autocomplete="email" placeholder="you@example.com" />
+    </div>
+    <div class="field">
+      <label for="f-phone" class="label">Phone / WhatsApp <span class="opt">optional</span></label>
+      <input id="f-phone" name="phone" type="tel" autocomplete="tel" placeholder="+33 · +971 …" />
+    </div>
+    <div class="field">
+      <label for="f-date" class="label">Date or season</label>
+      <input id="f-date" name="date" required placeholder="June 2027" />
+    </div>
+    <div class="field">
+      <label for="f-venue" class="label">Venue or city</label>
+      <input id="f-venue" name="venue" required placeholder="Château de Chantilly" />
+    </div>
+    <div class="field">
+      <label for="f-guests" class="label">Guests</label>
+      <select id="f-guests" name="guests">
+        <option>Under 50</option>
+        <option selected>50 – 120</option>
+        <option>120 – 250</option>
+        <option>250+</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-service" class="label">You’d like</label>
+      <select id="f-service" name="service">
+        <option selected>Film & photography</option>
+        <option>Film</option>
+        <option>Photography</option>
+      </select>
+    </div>
+    <div class="field field--wide">
+      <label for="f-message" class="label">Tell us about your day <span class="opt">optional</span></label>
+      <textarea id="f-message" name="message" rows="3" placeholder="The people, the place, the feeling you want to keep…"></textarea>
+    </div>
+
+    <div class="enquire__actions field--wide">
+      <button class="pill pill--rose enquire__send" type="submit">Send enquiry <span aria-hidden="true">→</span></button>
+      {
+        whatsapp ? (
+          <a class="pill" href={whatsapp} target="_blank" rel="noopener">WhatsApp us</a>
+        ) : null
+      }
+    </div>
+    <p class="enquire__status label" data-enquire-status role="status" aria-live="polite"></p>
+  </form>
+
+  <div class="enquire__done" data-enquire-done hidden tabindex="-1">
+    <p class="label label--dim">Received</p>
+    <p class="display display--md">Thank you — we’ll write back within a day.</p>
+    <p class="muted">Keep an eye on your inbox (and the spam folder, just in case).</p>
+  </div>
+</div>
+
+<style>
+  .enquire__form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 28px; }
+  .field { display: grid; gap: 8px; }
+  .field--wide { grid-column: 1 / -1; }
+  .field .opt { color: var(--ink-3); text-transform: none; letter-spacing: 0.02em; margin-left: 6px; }
+  .field input, .field select, .field textarea {
+    font: inherit; font-size: 17px; color: var(--ink); background: transparent;
+    border: 0; border-bottom: 1px solid var(--line-2); border-radius: 0;
+    padding: 8px 0 10px; outline: none; width: 100%;
+    transition: border-color 0.4s var(--ease);
+    -webkit-appearance: none; appearance: none;
+  }
+  .field select { background-image: linear-gradient(45deg, transparent 50%, var(--ink-2) 50%), linear-gradient(135deg, var(--ink-2) 50%, transparent 50%); background-position: calc(100% - 12px) 55%, calc(100% - 7px) 55%; background-size: 5px 5px; background-repeat: no-repeat; }
+  .field select option { background: var(--bg-2); color: var(--ink); }
+  .field textarea { resize: vertical; min-height: 84px; }
+  .field input::placeholder, .field textarea::placeholder { color: var(--ink-3); opacity: 0.7; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-bottom-color: var(--rose); }
+  .field [aria-invalid='true'] { border-bottom-color: #e07a6f; }
+  .enquire__trap { position: absolute; left: -9999px; }
+  .enquire__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+  .enquire__send { height: 48px; padding: 0 26px; }
+  .enquire__send[disabled] { opacity: 0.6; }
+  .enquire__status { grid-column: 1 / -1; min-height: 1.4em; margin: 0; }
+  .enquire__status.is-error { color: #e9a097; }
+  .enquire__done { display: grid; gap: 14px; padding: 40px 0; outline: none; }
+  .enquire__done[hidden], .enquire__form[hidden] { display: none; }
+  @media (max-width: 760px) {
+    .enquire__form { grid-template-columns: 1fr; gap: 22px; }
+    .field input, .field select, .field textarea { font-size: 16px; } /* 16px stops iOS zooming into fields */
+    .enquire__actions .pill { flex: 1 1 auto; justify-content: center; }
+  }
+</style>
+
+<script>
+  import { onPage } from '../scripts/lifecycle.js';
+
+  onPage(() => {
+    const root = document.querySelector('[data-enquire]');
+    if (!root) return;
+    const form = root.querySelector('[data-enquire-form]');
+    const status = root.querySelector('[data-enquire-status]');
+    const done = root.querySelector('[data-enquire-done]');
+    const send = form.querySelector('[type="submit"]');
+
+    const onSubmit = async (e) => {
+      // Always handle it here (Astro's router would otherwise try to navigate with it).
+      e.preventDefault();
+      let firstBad = null;
+      form.querySelectorAll('[required]').forEach((el) => {
+        const bad = !el.value.trim() || (el.type === 'email' && !/^\S+@\S+\.\S+$/.test(el.value));
+        el.setAttribute('aria-invalid', String(bad));
+        if (bad && !firstBad) firstBad = el;
+      });
+      if (firstBad) {
+        status.textContent = 'A few details are missing — the highlighted fields, please.';
+        status.classList.add('is-error');
+        firstBad.focus();
+        return;
+      }
+      status.classList.remove('is-error');
+      status.textContent = 'Sending…';
+      send.disabled = true;
+      try {
+        const res = await fetch('/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams(new FormData(form)).toString(),
+        });
+        if (!res.ok) throw new Error(String(res.status));
+        form.hidden = true;
+        done.hidden = false;
+        done.focus({ preventScroll: true });
+      } catch {
+        status.textContent = 'That didn’t send — please try again, or reach us on WhatsApp.';
+        status.classList.add('is-error');
+      } finally {
+        send.disabled = false;
+      }
+    };
+    const onInput = (e) => e.target.removeAttribute('aria-invalid');
+    form.addEventListener('submit', onSubmit);
+    form.addEventListener('input', onInput);
+    return () => {
+      form.removeEventListener('submit', onSubmit);
+      form.removeEventListener('input', onInput);
+    };
+  });
+</script>

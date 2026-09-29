@@ -1,0 +1,558 @@
+---
+// Home v2 preview — a wedding film in three acts.
+//   I   · the spiral   (Cosmos-style vortex of frames that calms into the headline)
+//   II  · the stories  (Inkwell-style scroll scenes, with couple quotes between them)
+//   III · yours        (offer, process, enquiry)
+import Enquire from '../../components/Enquire.astro';
+import Base from '../../layouts/Base.astro';
+import { sales, studio } from '../../data.js';
+import { WHATSAPP_MESSAGE, WHATSAPP_NUMBER } from '../../lib/config.js';
+import { embedUrl, getFeatured, getStories } from '../../lib/content.js';
+import { heroName } from '../../lib/vt.js';
+
+const SCENES = 6;
+const all = await getStories();
+const featured = (await getFeatured()).slice(0, SCENES);
+
+// Frames for the vortex: covers first, then a few moments from each story.
+const vortexImages = [
+  ...featured.map((s) => ({ src: s.coverSm, aspect: s.coverAspect })),
+  ...featured.flatMap((s) => s.media.filter((m) => m.type === 'image').slice(0, 2).map((m) => ({ src: m.thumb, aspect: m.aspect }))),
+].slice(0, 20);
+
+// Warm dusk skies, one per scene.
+const SKIES = [
+  ['#2c1a1b', '#0f0b0a', 'rgba(217, 163, 160, 0.34)'],
+  ['#2e2316', '#0f0c09', 'rgba(201, 166, 107, 0.3)'],
+  ['#281c26', '#0e0b0d', 'rgba(196, 150, 176, 0.26)'],
+  ['#301f19', '#100c0a', 'rgba(226, 158, 124, 0.28)'],
+  ['#222019', '#0d0c0a', 'rgba(214, 190, 140, 0.24)'],
+  ['#2b1b20', '#0f0b0c', 'rgba(222, 150, 160, 0.3)'],
+];
+const pad = (n: number) => String(n).padStart(2, '0');
+const quotes = sales.quotes;
+const whatsapp = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}` : '#enquire';
+const year = new Date().getFullYear();
+---
+
+<Base title="Home — preview" noindex bodyClass="v2" talk="#enquire" image={featured[0]?.cover}>
+  <!-- Pathfinder: where you are in the film -->
+  <div class="pathfinder" data-pathfinder aria-hidden="true">
+    <span class="label"><b data-pf-act>I</b> · <span data-pf-label>Prologue</span></span>
+    <span class="pathfinder__bar"><i data-pf-progress></i></span>
+  </div>
+
+  <main class="v2main">
+    <!-- ACT I · the spiral -->
+    <section class="act1" data-act1 data-chapter="I" data-label="Prologue">
+      <div class="act1__stage">
+        <div class="act1__void" aria-hidden="true"></div>
+        <div class="act1__canvas" data-vortex></div>
+        <div class="act1__copy" data-act1-copy>
+          <p class="label act1__kicker">amoura® · wedding films & photographs</p>
+          <h1 class="display act1__title">{sales.headline}</h1>
+          <p class="act1__sub">{sales.subline}</p>
+          <div class="act1__ctas">
+            <a class="pill pill--rose" href="#enquire">Let’s Talk</a>
+            <a class="pill" href="#stories">See the stories</a>
+          </div>
+        </div>
+        <p class="act1__cue label label--dim" aria-hidden="true">Scroll</p>
+      </div>
+      <script type="application/json" data-vortex-images set:html={JSON.stringify(vortexImages).replace(/</g, '\\u003c')} />
+    </section>
+
+    <!-- ACT II · the stories -->
+    <div id="stories" class="act-card" data-chapter="II" data-label="The stories">
+      <p class="label label--dim">Act II</p>
+      <p class="display display--md">The stories</p>
+    </div>
+
+    {
+      featured.map((s, i) => {
+        const sky = SKIES[i % SKIES.length];
+        const moments = s.media.filter((m) => m.type === 'image').slice(0, 2);
+        const film = s.media.find((m) => m.type === 'video');
+        const quote = i === 0 ? quotes[0] : i === 2 ? quotes[1] : i === 4 ? quotes[2] : null;
+        const proofAfter = i === 1;
+        return (
+          <>
+            <section
+              class="scene"
+              data-scene
+              data-chapter="II"
+              data-label={`${s.title} · ${pad(i + 1)}/${pad(featured.length)}`}
+              data-film={film ? embedUrl(film, { ambient: true }) : undefined}
+              style={`--sky1:${sky[0]};--sky2:${sky[1]};--glow:${sky[2]}`}
+            >
+              <div class="scene__stage">
+                <div class="scene__sky" aria-hidden="true" />
+                <div class="scene__moments" aria-hidden="true">
+                  {moments.map((m, k) => (
+                    <img class={`moment moment--${k ? 'b' : 'a'}`} src={m.thumb} alt="" loading="lazy" decoding="async" style={`aspect-ratio:${m.aspect}`} />
+                  ))}
+                </div>
+                <a class="scene__frame" href={`/story/${s.slug}`} data-frame data-cursor="view" data-cursor-label="View story →" aria-label={`${s.title} — view the story`}>
+                  <img class="scene__img" src={s.cover} alt="" loading={i < 1 ? 'eager' : 'lazy'} decoding="async" style={`view-transition-name:${heroName(s.slug)}`} data-img />
+                  <span class="scene__film" data-film-host />
+                  <span class="scene__shade" data-shade />
+                </a>
+                <div class="scene__text" data-text>
+                  <p class="label scene__kicker">
+                    II · {pad(i + 1)} <span class="label--dim">— {[...s.tags, s.year].join(' · ')}</span>
+                    {i === 0 && <span class="badge-new">NEW</span>}
+                  </p>
+                  <h2 class="display scene__title">{s.title}</h2>
+                  {s.desc && <p class="scene__desc">{s.desc}</p>}
+                  <div class="scene__ctas">
+                    <a class="pill" href={`/story/${s.slug}`}>View the story <span aria-hidden="true">→</span></a>
+                    {film && <span class="label label--dim scene__filmnote" data-filmnote>● Film</span>}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {quote && (
+              <section class="quote" data-quote data-chapter="II" data-label="In their words">
+                <div class="quote__inner">
+                  {sales.sample && <span class="sample label">Sample quote — replace in src/data.js</span>}
+                  <blockquote class="display quote__text" data-quote-text>
+                    {quote.text.split(' ').map((w) => <span>{w} </span>)}
+                  </blockquote>
+                  <p class="label quote__who">
+                    {quote.who} <span class="label--dim">— {quote.where}</span>
+                  </p>
+                </div>
+              </section>
+            )}
+
+            {proofAfter && (
+              <section class="proof" data-chapter="II" data-label="Where we’ve been">
+                {sales.sample && <span class="sample label">Sample numbers & venues — replace in src/data.js</span>}
+                <ul class="proof__stats">
+                  {sales.stats.map(([n, l]) => (
+                    <li data-reveal>
+                      <span class="display proof__n">{n}</span>
+                      <span class="label label--dim">{l}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div class="marquee" aria-label="Venues">
+                  <div class="marquee__track">
+                    {[0, 1].map((dup) => (
+                      <ul aria-hidden={dup ? 'true' : undefined}>
+                        {sales.venues.map((v) => (
+                          <li class="display">{v}</li>
+                        ))}
+                      </ul>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+          </>
+        );
+      })
+    }
+
+    <section class="more" data-chapter="II" data-label="More stories">
+      <a class="more__link" href="/archive" data-cursor="view" data-cursor-label="Archive →">
+        <span class="label label--dim">{all.length} stories in the archive</span>
+        <span class="display display--md">See every story <span aria-hidden="true">→</span></span>
+      </a>
+      <a class="more__link more__link--corridor" href="/" data-cursor="view" data-cursor-label="Step inside →">
+        <span class="label label--dim">An experience</span>
+        <span class="display display--sm">Step inside the memory corridor <span aria-hidden="true">→</span></span>
+      </a>
+    </section>
+
+    <!-- ACT III · yours -->
+    <section class="act3" id="yours" data-chapter="III" data-label="Yours">
+      <div class="act3__head">
+        <p class="label label--dim" data-reveal>Act III</p>
+        <h2 class="display act3__title" data-reveal style="--d:.06s">Let’s make yours.</h2>
+      </div>
+
+      <div class="offer" data-reveal>
+        {sales.sample && <span class="sample label">Sample offer — replace in src/data.js</span>}
+        <p class="label">Collections from</p>
+        <p class="display offer__price">{sales.offer.priceFrom}</p>
+        <p class="label offer__booking"><span class="offer__dot" aria-hidden="true" /> Now booking {sales.offer.bookingYear} · {sales.offer.note}</p>
+        <ul class="offer__list">
+          {sales.offer.included.map((x) => <li>{x}</li>)}
+        </ul>
+      </div>
+
+      <ol class="steps">
+        {
+          studio.process.map(([t, d], i) => (
+            <li data-reveal style={`--d:${i * 0.06}s`}>
+              <span class="label">{pad(i + 1)}</span>
+              <span class="display display--sm">{t}</span>
+              <p>{d}</p>
+            </li>
+          ))
+        }
+      </ol>
+
+      <div class="enquire-wrap" id="enquire" data-enquire-section>
+        <div class="enquire-wrap__intro">
+          <p class="label label--dim">Enquire</p>
+          <p class="display display--md">Tell us about your day.</p>
+          <p class="muted">We reply within a day. Prefer to talk? <a class="link-arrow" href={whatsapp} target={WHATSAPP_NUMBER ? '_blank' : undefined} rel="noopener">WhatsApp us</a></p>
+        </div>
+        <Enquire />
+      </div>
+    </section>
+
+    <footer class="v2foot">
+      <span class="v2foot__logo">amoura<sup>®</sup></span>
+      <span class="label label--dim">Paris · Dubai · anywhere</span>
+      <span class="label label--dim">© {year}</span>
+    </footer>
+  </main>
+
+  <!-- WhatsApp, always one tap away -->
+  <a class="wa" href={whatsapp} target={WHATSAPP_NUMBER ? '_blank' : undefined} rel="noopener" aria-label="WhatsApp" data-wa>
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>
+  </a>
+</Base>
+
+<style is:global>
+  body.v2 { background: #0c0a09; }
+</style>
+
+<style>
+  /* ---------- pathfinder ---------- */
+  .pathfinder {
+    position: fixed; left: 50%; top: 84px; z-index: 55; transform: translateX(-50%);
+    display: grid; gap: 6px; justify-items: center; pointer-events: none;
+    padding: 8px 14px 7px; border-radius: 999px;
+    background: rgba(12, 10, 9, 0.45); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--line); transition: top 0.5s var(--ease), opacity 0.6s var(--ease);
+    white-space: nowrap; max-width: calc(100vw - 32px);
+  }
+  .pathfinder .label { font-size: 10px; overflow: hidden; text-overflow: ellipsis; max-width: 70vw; }
+  .pathfinder b { font-weight: 400; color: var(--rose); }
+  .pathfinder__bar { width: 100%; min-width: 120px; height: 1px; background: var(--line); overflow: hidden; }
+  .pathfinder__bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--rose), var(--gold)); transform-origin: left; transform: scaleX(0); }
+
+  /* ---------- Act I ---------- */
+  .act1 { position: relative; height: 220vh; }
+  .act1__stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+  .act1__void { position: absolute; inset: 0; background: radial-gradient(60% 55% at 50% 50%, #1e1512 0%, #0c0a09 70%); }
+  .act1__canvas { position: absolute; inset: 0; }
+  .act1__canvas :global(canvas) { display: block; width: 100%; height: 100%; }
+  .act1__copy {
+    position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; text-align: center;
+    gap: 22px; padding: 0 var(--gutter); pointer-events: none;
+  }
+  .act1__copy > * { pointer-events: auto; position: relative; }
+  /* a soft dark halo keeps the headline legible over the frames */
+  .act1__copy::before { content: ''; position: absolute; left: 50%; top: 50%; width: min(1100px, 120vw); height: min(620px, 80vh); transform: translate(-50%, -50%); background: radial-gradient(closest-side, rgba(12, 10, 9, 0.78), rgba(12, 10, 9, 0.35) 60%, transparent); pointer-events: none; }
+  .act1__kicker { opacity: 0; animation: v2in 1.4s var(--ease) 1.6s forwards; }
+  .act1__title { font-size: clamp(3rem, 8.4vw, 8rem); max-width: 12ch; text-shadow: 0 4px 60px rgba(0, 0, 0, 0.7); opacity: 0; animation: v2in 1.8s var(--ease) 1.9s forwards; }
+  .act1__sub { margin: 0; max-width: 42ch; color: var(--ink-2); font-size: clamp(1rem, 1.3vw, 1.15rem); opacity: 0; animation: v2in 1.6s var(--ease) 2.3s forwards; }
+  .act1__ctas { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; opacity: 0; animation: v2in 1.6s var(--ease) 2.6s forwards; }
+  .act1__ctas .pill { height: 46px; padding: 0 22px; }
+  .act1__cue { position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); letter-spacing: 0.3em; animation: cue 2.4s var(--ease-io) infinite; }
+  @keyframes v2in { from { opacity: 0; transform: translateY(18px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+  @keyframes cue { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.8; } }
+
+  .act-card { min-height: 50vh; display: grid; place-content: center; justify-items: center; gap: 12px; text-align: center; padding: 0 var(--gutter); }
+
+  /* ---------- Act II scenes ---------- */
+  .scene { position: relative; height: 220vh; }
+  .scene__stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+  .scene__sky {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(70% 60% at 72% 28%, var(--glow), transparent 70%),
+      radial-gradient(60% 50% at 20% 85%, rgba(201, 166, 107, 0.12), transparent 70%),
+      linear-gradient(180deg, var(--sky1), var(--sky2));
+  }
+  .scene__frame { position: absolute; inset: 0; display: block; overflow: hidden; will-change: clip-path; }
+  .scene__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; will-change: transform; filter: saturate(0.92) sepia(0.05); }
+  .scene__film { position: absolute; inset: 0; opacity: 0; transition: opacity 1.6s var(--ease); }
+  .scene__film:global(.is-on) { opacity: 1; }
+  .scene__film :global(iframe) { position: absolute; top: 50%; left: 50%; width: max(100%, calc(100svh * 16 / 9)); height: max(100%, calc(100vw * 9 / 16)); transform: translate(-50%, -50%); border: 0; pointer-events: none; }
+  .scene__shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(12, 10, 9, 0.92), rgba(12, 10, 9, 0.2) 55%, rgba(12, 10, 9, 0.35)); opacity: 0; }
+  .scene__moments { position: absolute; inset: 0; pointer-events: none; }
+  .moment { position: absolute; width: clamp(120px, 14vw, 230px); border-radius: 4px; object-fit: cover; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5); will-change: transform, opacity; }
+  .moment--a { left: 7%; top: 58%; }
+  .moment--b { right: 8%; top: 12%; }
+  .scene__text { position: absolute; left: var(--gutter); right: var(--gutter); bottom: clamp(90px, 13vh, 150px); display: grid; gap: 18px; max-width: 900px; opacity: 0; will-change: transform, opacity; pointer-events: none; }
+  .scene__text:global(.is-live) { pointer-events: auto; }
+  .scene__kicker { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .scene__title { font-size: clamp(3.2rem, 10vw, 9.5rem); }
+  .scene__desc { margin: 0; max-width: 46ch; color: var(--ink-2); font-size: clamp(1rem, 1.25vw, 1.15rem); }
+  .scene__ctas { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .scene__filmnote { opacity: 0; transition: opacity 0.8s var(--ease); }
+  .scene__filmnote:global(.is-on) { opacity: 1; color: var(--rose); }
+
+  /* ---------- quotes ---------- */
+  .quote { min-height: 110vh; display: grid; place-items: center; padding: 20vh var(--gutter); background: radial-gradient(60% 50% at 50% 50%, rgba(217, 163, 160, 0.08), transparent 70%); }
+  .quote__inner { display: grid; gap: 30px; justify-items: center; text-align: center; max-width: 1100px; }
+  .quote__text { margin: 0; font-size: clamp(2rem, 4.6vw, 4.2rem); line-height: 1.12; }
+  .quote__text span { opacity: 0.14; transition: opacity 0.5s var(--ease); }
+  .quote__text span:global(.on) { opacity: 1; }
+  .sample { color: #e9c08f; border: 1px dashed rgba(233, 192, 143, 0.5); padding: 5px 10px; border-radius: 999px; font-size: 9.5px; justify-self: center; }
+
+  /* ---------- proof ---------- */
+  .proof { padding: 18vh 0; display: grid; gap: 9vh; justify-items: center; overflow: hidden; }
+  .proof__stats { list-style: none; margin: 0; padding: 0 var(--gutter); display: flex; gap: clamp(40px, 9vw, 140px); flex-wrap: wrap; justify-content: center; }
+  .proof__stats li { display: grid; justify-items: center; gap: 8px; }
+  .proof__n { font-size: clamp(3.4rem, 8vw, 7rem); }
+  .marquee { width: 100%; mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+  .marquee__track { display: flex; width: max-content; animation: marquee 60s linear infinite; }
+  .marquee ul { list-style: none; margin: 0; padding: 0; display: flex; }
+  .marquee li { font-size: clamp(2rem, 4vw, 3.6rem); color: var(--ink-2); padding-right: 0.9em; white-space: nowrap; }
+  .marquee li::after { content: '·'; margin-left: 0.9em; color: var(--rose); font-style: normal; }
+  @keyframes marquee { to { transform: translateX(-50%); } }
+
+  /* ---------- more ---------- */
+  .more { display: grid; gap: 8px; padding: 18vh var(--gutter) 10vh; max-width: 1560px; margin: 0 auto; }
+  .more__link { display: grid; gap: 10px; padding: 34px 0; border-top: 1px solid var(--line); transition: padding 0.6s var(--ease); }
+  .more__link--corridor { border-bottom: 1px solid var(--line); }
+  @media (hover: hover) { .more__link:hover { padding-left: 18px; } }
+
+  /* ---------- Act III ---------- */
+  .act3 { padding: 16vh var(--gutter) 12vh; max-width: 1560px; margin: 0 auto; display: grid; gap: 12vh; background: radial-gradient(50% 30% at 80% 0%, rgba(201, 166, 107, 0.08), transparent 70%); }
+  .act3__head { display: grid; gap: 14px; }
+  .act3__title { font-size: clamp(3.4rem, 10vw, 9rem); }
+  .offer { display: grid; gap: 14px; justify-items: start; padding: clamp(28px, 4vw, 56px); border: 1px solid var(--line); border-radius: 18px; background: linear-gradient(135deg, rgba(217, 163, 160, 0.07), rgba(201, 166, 107, 0.04)); }
+  .offer .sample { justify-self: start; }
+  .offer__price { font-size: clamp(3.4rem, 8vw, 6.5rem); }
+  .offer__booking { display: flex; align-items: center; gap: 10px; color: var(--ink); }
+  .offer__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--rose); box-shadow: 0 0 12px var(--rose); animation: cue 2s var(--ease-io) infinite; }
+  .offer__list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; width: 100%; }
+  .offer__list li { padding: 14px 0; border-top: 1px solid var(--line); color: var(--ink-2); }
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; }
+  .steps li { display: grid; gap: 10px; align-content: start; padding-top: 20px; border-top: 1px solid var(--line); }
+  .steps p { margin: 0; color: var(--ink-2); }
+  .enquire-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: clamp(32px, 6vw, 110px); align-items: start; scroll-margin-top: 150px; }
+  .enquire-wrap__intro { display: grid; gap: 16px; position: sticky; top: 140px; }
+
+  .v2foot { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; flex-wrap: wrap; padding: 40px var(--gutter) 110px; border-top: 1px solid var(--line); }
+  .v2foot__logo { font-family: var(--serif); font-style: italic; font-size: 26px; }
+  .v2foot__logo sup { font-family: var(--mono); font-style: normal; font-size: 9px; }
+
+  /* ---------- WhatsApp ---------- */
+  .wa {
+    position: fixed; right: var(--gutter); bottom: 22px; z-index: 62;
+    width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center;
+    background: rgba(22, 19, 17, 0.8); border: 1px solid var(--line-2); color: var(--ink);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+    transition: transform 0.5s var(--ease), opacity 0.5s var(--ease), background 0.4s var(--ease);
+  }
+  @media (hover: hover) { .wa:hover { background: #25d366; color: #0b1a10; border-color: transparent; } }
+  .wa:global(.is-away) { opacity: 0; transform: translateY(20px); pointer-events: none; }
+
+  /* ---------- phones ---------- */
+  @media (max-width: 760px) {
+    .pathfinder { top: calc(max(12px, env(safe-area-inset-top)) + 58px); }
+    :global(html.chrome-hidden) .pathfinder { top: calc(max(8px, env(safe-area-inset-top)) + 6px); }
+    .act1 { height: 190vh; }
+    .act1__title { font-size: clamp(2.7rem, 12vw, 3.6rem); }
+    .act1__ctas { width: 100%; max-width: 340px; }
+    .act1__ctas .pill { flex: 1 1 0; justify-content: center; }
+    .act1__cue { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 76px); }
+    .scene { height: 200vh; }
+    .scene__title { font-size: clamp(2.8rem, 14vw, 4rem); }
+    .scene__desc { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .scene__text { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 82px); gap: 14px; }
+    .moment { width: 34vw; }
+    .moment--a { left: 5%; top: 62%; }
+    .moment--b { right: 5%; top: 16%; }
+    .quote { min-height: 90vh; padding: 14vh var(--gutter); }
+    .quote__text { font-size: clamp(1.8rem, 8vw, 2.4rem); }
+    .proof { padding: 12vh 0; gap: 7vh; }
+    .proof__stats { gap: 28px 40px; }
+    .act3 { gap: 80px; padding-top: 12vh; }
+    .offer { border-radius: 14px; }
+    .offer__list { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr; gap: 0; }
+    .steps li { grid-template-columns: 34px 1fr; gap: 4px 12px; padding: 16px 0; }
+    .steps li .label { grid-row: 1 / span 2; padding-top: 8px; }
+    .enquire-wrap { grid-template-columns: 1fr; gap: 28px; scroll-margin-top: 80px; }
+    .enquire-wrap__intro { position: static; }
+    .wa { right: 14px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 66px); width: 46px; height: 46px; }
+    :global(html.chrome-hidden) .wa { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 4px); }
+    .v2foot { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .act1__kicker, .act1__title, .act1__sub, .act1__ctas { opacity: 1; animation: none; }
+    .marquee__track { animation: none; }
+    .quote__text span { opacity: 1; }
+  }
+</style>
+
+<script>
+  import { onPage, prefersReducedMotion, saveData } from '../../scripts/lifecycle.js';
+  import { startSmoothScroll } from '../../scripts/smooth.js';
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const smooth = (a, b, v) => {
+    const t = clamp((v - a) / (b - a), 0, 1);
+    return t * t * (3 - 2 * t);
+  };
+  const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+  onPage(() => {
+    const act1 = document.querySelector('[data-act1]');
+    if (!act1) return;
+    const reduced = prefersReducedMotion();
+    const mobile = window.matchMedia('(max-width: 760px)').matches;
+    const allowFilm = !reduced && !saveData() && !mobile;
+    const smoothScroll = startSmoothScroll();
+
+    // ---- Act I: vortex (three.js is loaded lazily) ----
+    let vortex = null;
+    let dead = false;
+    const images = JSON.parse(act1.querySelector('[data-vortex-images]').textContent);
+    import('../../scripts/vortex.js').then(({ mountVortex }) => {
+      if (dead) return;
+      vortex = mountVortex(act1.querySelector('[data-vortex]'), { images, reducedMotion: reduced });
+    });
+    const copy = act1.querySelector('[data-act1-copy]');
+
+    // ---- Act II: scenes ----
+    const scenes = [...document.querySelectorAll('[data-scene]')].map((el) => ({
+      el,
+      frame: el.querySelector('[data-frame]'),
+      img: el.querySelector('[data-img]'),
+      shade: el.querySelector('[data-shade]'),
+      text: el.querySelector('[data-text]'),
+      moments: [...el.querySelectorAll('.moment')],
+      filmHost: el.querySelector('[data-film-host]'),
+      filmNote: el.querySelector('[data-filmnote]'),
+      filmSrc: el.dataset.film,
+      filmOn: false,
+    }));
+
+    const startFilm = (s) => {
+      if (s.filmOn || !s.filmSrc) return;
+      s.filmOn = true;
+      const iframe = document.createElement('iframe');
+      iframe.src = s.filmSrc;
+      iframe.allow = 'autoplay; fullscreen';
+      iframe.tabIndex = -1;
+      iframe.setAttribute('aria-hidden', 'true');
+      iframe.title = 'Film';
+      iframe.addEventListener('load', () =>
+        setTimeout(() => {
+          if (!s.filmOn) return;
+          s.filmHost.classList.add('is-on');
+          s.filmNote?.classList.add('is-on');
+        }, 900),
+      );
+      s.filmHost.append(iframe);
+    };
+    const stopFilm = (s) => {
+      if (!s.filmOn) return;
+      s.filmOn = false;
+      s.filmHost.classList.remove('is-on');
+      s.filmNote?.classList.remove('is-on');
+      setTimeout(() => {
+        if (!s.filmOn) s.filmHost.replaceChildren();
+      }, 1600);
+    };
+
+    // ---- quotes: words light up as you read ----
+    const quotes = [...document.querySelectorAll('[data-quote]')].map((el) => ({ el, words: [...el.querySelectorAll('[data-quote-text] span')] }));
+
+    // ---- pathfinder ----
+    const chapters = [...document.querySelectorAll('[data-chapter]')];
+    const pfAct = document.querySelector('[data-pf-act]');
+    const pfLabel = document.querySelector('[data-pf-label]');
+    const pfBar = document.querySelector('[data-pf-progress]');
+    let pfCurrent = null;
+
+    // ---- WhatsApp hides while the form is on screen ----
+    const wa = document.querySelector('[data-wa]');
+    const enquireSection = document.querySelector('[data-enquire-section]');
+
+    let raf = 0;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      const vh = window.innerHeight;
+
+      // Act I progress: 0 at top, 1 when the pinned stage leaves.
+      const r1 = act1.getBoundingClientRect();
+      const p1 = clamp(-r1.top / Math.max(1, r1.height - vh), 0, 1);
+      if (vortex) {
+        vortex.setScroll(p1);
+        vortex.setVisible(r1.bottom > 0);
+      }
+      copy.style.opacity = String(1 - smooth(0.05, 0.4, p1));
+      copy.style.transform = reduced ? '' : `translateY(${-p1 * 60}px) scale(${1 - p1 * 0.06})`;
+
+      for (const s of scenes) {
+        const r = s.el.getBoundingClientRect();
+        if (r.bottom < -vh || r.top > vh * 1.2) {
+          if (s.filmOn) stopFilm(s);
+          continue;
+        }
+        const p = clamp(-r.top / Math.max(1, r.height - vh), 0, 1);
+        const e = reduced ? 1 : easeInOut(clamp(p / 0.42, 0, 1));
+        // Frame grows from an inset card into full bleed.
+        const iy = (1 - e) * (mobile ? 20 : 17);
+        const ix = (1 - e) * (mobile ? 9 : 27);
+        const rad = (1 - e) * 14;
+        s.frame.style.clipPath = `inset(${iy}% ${ix}% ${iy}% ${ix}% round ${rad}px)`;
+        if (!reduced) s.img.style.transform = `translate3d(0, ${(p - 0.5) * -5}%, 0) scale(${1.16 - 0.16 * e})`;
+        s.shade.style.opacity = String(0.1 + 0.8 * smooth(0.32, 0.6, p));
+        // Title reveal after the frame opens; eases out as the next act arrives.
+        const tin = smooth(0.36, 0.56, p);
+        const tout = 1 - smooth(0.9, 1, p);
+        s.text.style.opacity = String(tin * tout);
+        s.text.style.transform = reduced ? '' : `translate3d(0, ${(1 - tin) * 40}px, 0)`;
+        s.text.classList.toggle('is-live', tin * tout > 0.5);
+        // Moments drift past before the frame opens.
+        s.moments.forEach((m, k) => {
+          const o = (1 - smooth(0.18, 0.4, p)) * smooth(-0.25, 0, (vh - r.top) / vh - 1);
+          m.style.opacity = String(o);
+          if (!reduced) m.style.transform = `translate3d(0, ${(0.3 - p) * (k ? 50 : 80)}vh, 0) rotate(${(k ? 3 : -4) * (1 - p)}deg)`;
+        });
+        if (allowFilm && s.filmSrc) {
+          if (p > 0.4 && p < 0.93) startFilm(s);
+          else if (s.filmOn) stopFilm(s);
+        }
+      }
+
+      for (const q of quotes) {
+        const r = q.el.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > vh) continue;
+        const p = clamp((vh - r.top) / (vh * 0.9), 0, 1);
+        const lit = Math.floor(p * q.words.length * 1.15);
+        q.words.forEach((w, i) => w.classList.toggle('on', i < lit));
+      }
+
+      // Pathfinder: the chapter crossing the middle of the screen.
+      let cur = chapters[0];
+      for (const c of chapters) if (c.getBoundingClientRect().top <= vh * 0.5) cur = c;
+      if (cur !== pfCurrent) {
+        pfCurrent = cur;
+        pfAct.textContent = cur.dataset.chapter;
+        pfLabel.textContent = cur.dataset.label;
+      }
+      const doc = document.documentElement;
+      pfBar.style.transform = `scaleX(${clamp(window.scrollY / Math.max(1, doc.scrollHeight - vh), 0, 1)})`;
+
+      if (wa && enquireSection) {
+        const re = enquireSection.getBoundingClientRect();
+        wa.classList.toggle('is-away', re.top < vh * 0.8 && re.bottom > 0);
+      }
+    };
+    raf = requestAnimationFrame(tick);
+
+    return () => {
+      dead = true;
+      cancelAnimationFrame(raf);
+      vortex?.destroy();
+      scenes.forEach(stopFilm);
+      smoothScroll.destroy();
+    };
+  });
+</script>

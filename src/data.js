@@ -196,3 +196,48 @@ export const studio = {
     ['Deliver', 'A graded film, a short teaser within a week, and a full, hand-edited photo story.'],
   ],
 };
+
+/**
+ * Sales content for the home page (quotes, proof, offer).
+ * TODO: every value here is a SAMPLE. Replace with real words, venues and prices,
+ * then set `sample: false` — while it's true, the page marks these blocks as samples.
+ */
+export const sales = {
+  sample: true,
+  headline: 'Your day, kept the way it felt.',
+  subline: 'Wedding films & photographs between Paris and Dubai — and anywhere love takes you.',
+  quotes: [
+    {
+      text: 'We have watched our film more times than we can count. It doesn’t look like a wedding video — it feels like being back there.',
+      who: 'Léa & Karim',
+      where: 'Château de Chantilly',
+    },
+    {
+      text: 'They were invisible all day, and somehow caught every look between us. Our families still talk about the photographs.',
+      who: 'Noor & Adam',
+      where: 'Al Maha, Dubai',
+    },
+    {
+      text: 'From the first call it felt like friends were filming our wedding. Calm, kind, and the edit made us cry.',
+      who: 'Camille & Théo',
+      where: 'Cap Ferrat',
+    },
+  ],
+  venues: ['Château de Chantilly', 'Al Maha Desert Resort', 'Cap Ferrat', 'Lake Como', 'Marrakech', 'Montmartre', 'Palm Jumeirah', 'Provence', 'Santorini', 'Versailles'],
+  stats: [
+    ['120+', 'weddings filmed'],
+    ['14', 'countries'],
+    ['2', 'of us, every time'],
+  ],
+  offer: {
+    priceFrom: '€8,500',
+    bookingYear: 2027,
+    note: 'A limited number of dates each season.',
+    included: [
+      'Two of us, from getting ready to the last dance',
+      'A graded feature film + a one-minute teaser within a week',
+      'A full, hand-edited photo story',
+      'Travel anywhere — Paris & Dubai based',
+    ],
+  },
+};
