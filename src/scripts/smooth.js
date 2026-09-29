@@ -11,6 +11,8 @@ export function startSmoothScroll() {
   const native = !isFinePointer() || prefersReducedMotion();
   const lenis = native ? null : new Lenis({ lerp: 0.085, wheelMultiplier: 0.9, smoothWheel: true });
   let raf = 0;
+  // Shared so other scripts (e.g. the corridor's frame snapping) can glide the page.
+  window.__lenis = lenis;
   if (lenis) {
     const loop = (t) => {
       lenis.raf(t);
@@ -45,6 +47,7 @@ export function startSmoothScroll() {
     destroy() {
       cancelAnimationFrame(raf);
       lenis?.destroy();
+      if (window.__lenis === lenis) window.__lenis = null;
       document.removeEventListener('click', onClick, true);
     },
   };

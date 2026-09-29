@@ -1,0 +1,109 @@
+---
+// Collections, side by side on desktop; a swipeable row on phones (opens on the
+// featured one). Each "Enquire" button pre-selects that collection in the form.
+import { sales } from '../data.js';
+
+const { packages, packagesNote, offer } = sales;
+---
+
+<div class="pk" data-pk>
+  <header class="pk__head">
+    {sales.sample && <span class="sample label">Sample collections — replace in src/data.js</span>}
+    <p class="label label--dim">Collections</p>
+    <h2 class="display pk__title">Three ways to keep it.</h2>
+    <p class="label pk__booking"><span class="pk__dot" aria-hidden="true"></span> Now booking {offer.bookingYear} · {offer.note}</p>
+  </header>
+
+  <div class="pk__row" data-pk-row>
+    {
+      packages.map((p) => (
+        <article class:list={['pk__card', { 'pk__card--featured': p.featured }]} data-pk-card={p.id}>
+          {p.featured && <span class="pk__badge label">Most chosen</span>}
+          <h3 class="display pk__name">{p.name}</h3>
+          <p class="pk__tag">{p.tagline}</p>
+          <div class="pk__price">
+            <span class="label label--dim">from</span>
+            <span class="display">{p.priceFrom}</span>
+          </div>
+          <p class="label pk__facts">{p.facts}</p>
+          <ul class="pk__list">
+            {p.includes.map((x) => (
+              <li>
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="1.4" /></svg>
+                {x}
+              </li>
+            ))}
+          </ul>
+          <a class:list={['pill', 'pk__cta', { 'pill--rose': p.featured }]} href="#enquire" data-package={p.id}>
+            Enquire about {p.name}
+          </a>
+        </article>
+      ))
+    }
+  </div>
+  <p class="pk__note muted">{packagesNote}</p>
+</div>
+
+<style>
+  .pk { display: grid; gap: 48px; }
+  .pk__head { display: grid; gap: 14px; justify-items: start; }
+  .pk__title { font-size: clamp(3rem, 7vw, 6.5rem); }
+  .pk__booking { display: flex; align-items: center; gap: 10px; color: var(--ink); }
+  .pk__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--rose); box-shadow: 0 0 12px var(--rose); }
+  .sample { color: #e9c08f; border: 1px dashed rgba(233, 192, 143, 0.5); padding: 5px 10px; border-radius: 999px; font-size: 9.5px; }
+
+  .pk__row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: stretch; }
+  .pk__card {
+    position: relative; display: flex; flex-direction: column; gap: 14px;
+    padding: 34px 30px 30px; border-radius: 18px; border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(236, 228, 218, 0.035), rgba(236, 228, 218, 0.01));
+    transition: border-color 0.6s var(--ease), transform 0.6s var(--ease);
+  }
+  .pk__card--featured { border-color: rgba(217, 163, 160, 0.45); background: linear-gradient(180deg, rgba(217, 163, 160, 0.1), rgba(201, 166, 107, 0.03)); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35); }
+  @media (hover: hover) { .pk__card:hover { border-color: var(--line-2); transform: translateY(-4px); } .pk__card--featured:hover { border-color: rgba(217, 163, 160, 0.7); } }
+  .pk__badge { position: absolute; top: -11px; left: 30px; padding: 4px 10px 3px; border-radius: 999px; background: var(--rose); color: #1a0f0e; font-size: 9.5px; }
+  .pk__name { font-size: clamp(2.2rem, 3vw, 2.8rem); }
+  .pk__tag { margin: 0; color: var(--ink-2); min-height: 3em; }
+  .pk__price { display: flex; align-items: baseline; gap: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .pk__price .display { font-size: clamp(2.4rem, 3.4vw, 3.2rem); font-style: normal; }
+  .pk__facts { color: var(--ink); }
+  .pk__list { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 10px; flex: 1; }
+  .pk__list li { display: grid; grid-template-columns: 18px 1fr; gap: 8px; color: var(--ink-2); font-size: 15px; line-height: 1.45; }
+  .pk__list svg { margin-top: 4px; color: var(--rose); }
+  .pk__cta { justify-content: center; height: 46px; margin-top: 10px; }
+  .pk__note { margin: 0; max-width: 60ch; font-size: 15px; }
+
+  @media (max-width: 900px) {
+    /* phones & small tablets: a swipeable row, peeking the next card */
+    .pk__row {
+      display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+      margin: 0 calc(-1 * var(--gutter)); padding: 14px var(--gutter) 6px; scroll-padding-inline: var(--gutter);
+    }
+    .pk__row::-webkit-scrollbar { display: none; }
+    .pk__card { flex: 0 0 min(84vw, 380px); scroll-snap-align: center; padding: 30px 22px 22px; }
+    .pk__tag { min-height: 0; }
+  }
+</style>
+
+<script>
+  import { onPage } from '../scripts/lifecycle.js';
+
+  onPage(() => {
+    const root = document.querySelector('[data-pk]');
+    if (!root) return;
+    // Phones: start centred on the featured collection.
+    const row = root.querySelector('[data-pk-row]');
+    const featured = root.querySelector('.pk__card--featured');
+    if (featured && row.scrollWidth > row.clientWidth) {
+      row.scrollLeft = featured.offsetLeft - (row.clientWidth - featured.offsetWidth) / 2;
+    }
+    // Pre-select the collection in the enquiry form.
+    const onClick = (e) => {
+      const select = document.querySelector('#f-package');
+      if (select) select.value = e.currentTarget.dataset.package;
+    };
+    const ctas = [...root.querySelectorAll('[data-package]')];
+    ctas.forEach((a) => a.addEventListener('click', onClick));
+    return () => ctas.forEach((a) => a.removeEventListener('click', onClick));
+  });
+</script>

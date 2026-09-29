@@ -1,0 +1,98 @@
+---
+// Opening: a spiral vortex of wedding frames that rushes in and calms behind the
+// headline. Scrolling flies the camera into it, handing over to the corridor below.
+import { sales } from '../data.js';
+
+interface Props {
+  images: { src: string; aspect: number }[];
+}
+const { images } = Astro.props;
+---
+
+<section class="spiral" data-spiral aria-label="Welcome">
+  <div class="spiral__stage">
+    <div class="spiral__void" aria-hidden="true"></div>
+    <div class="spiral__canvas" data-vortex></div>
+    <div class="spiral__copy" data-spiral-copy>
+      <p class="label spiral__kicker">amoura® · wedding films & photographs</p>
+      <h1 class="display spiral__title">{sales.headline}</h1>
+      <p class="spiral__sub">{sales.subline}</p>
+      <div class="spiral__ctas">
+        <a class="pill pill--rose" href="#enquire">Let’s Talk</a>
+        <a class="pill" href="#stories">See the stories</a>
+      </div>
+    </div>
+    <p class="spiral__cue label label--dim" aria-hidden="true">Scroll</p>
+  </div>
+  <script type="application/json" data-vortex-images set:html={JSON.stringify(images).replace(/</g, '\\u003c')} />
+</section>
+
+<style>
+  .spiral { position: relative; height: 185vh; }
+  .spiral__stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+  .spiral__void { position: absolute; inset: 0; background: radial-gradient(60% 55% at 50% 50%, #1e1512 0%, #0c0a09 70%); }
+  .spiral__canvas { position: absolute; inset: 0; }
+  .spiral__canvas :global(canvas) { display: block; width: 100%; height: 100%; }
+  .spiral__copy { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; text-align: center; gap: 22px; padding: 0 var(--gutter); pointer-events: none; will-change: transform, opacity; }
+  .spiral__copy > * { pointer-events: auto; position: relative; }
+  /* a soft dark halo keeps the headline legible over the frames */
+  .spiral__copy::before { content: ''; position: absolute; left: 50%; top: 50%; width: min(1100px, 120vw); height: min(620px, 80vh); transform: translate(-50%, -50%); background: radial-gradient(closest-side, rgba(12, 10, 9, 0.78), rgba(12, 10, 9, 0.35) 60%, transparent); pointer-events: none; }
+  .spiral__kicker { opacity: 0; animation: sp-in 1.4s var(--ease) 1.6s forwards; }
+  .spiral__title { font-size: clamp(3rem, 8.4vw, 8rem); max-width: 12ch; text-shadow: 0 4px 60px rgba(0, 0, 0, 0.7); opacity: 0; animation: sp-in 1.8s var(--ease) 1.9s forwards; }
+  .spiral__sub { margin: 0; max-width: 42ch; color: var(--ink-2); font-size: clamp(1rem, 1.3vw, 1.15rem); opacity: 0; animation: sp-in 1.6s var(--ease) 2.3s forwards; }
+  .spiral__ctas { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; opacity: 0; animation: sp-in 1.6s var(--ease) 2.6s forwards; }
+  .spiral__ctas .pill { height: 46px; padding: 0 22px; }
+  .spiral__cue { position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); letter-spacing: 0.3em; animation: sp-cue 2.4s var(--ease-io) infinite; }
+  @keyframes sp-in { from { opacity: 0; transform: translateY(18px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+  @keyframes sp-cue { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.8; } }
+
+  @media (max-width: 760px) {
+    .spiral { height: 170vh; }
+    .spiral__title { font-size: clamp(2.7rem, 12vw, 3.6rem); }
+    .spiral__ctas { width: 100%; max-width: 340px; }
+    .spiral__ctas .pill { flex: 1 1 0; justify-content: center; }
+    .spiral__cue { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 76px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spiral__kicker, .spiral__title, .spiral__sub, .spiral__ctas { opacity: 1; animation: none; }
+  }
+</style>
+
+<script>
+  import { onPage, prefersReducedMotion } from '../scripts/lifecycle.js';
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const smooth = (a, b, v) => {
+    const t = clamp((v - a) / (b - a), 0, 1);
+    return t * t * (3 - 2 * t);
+  };
+
+  onPage(() => {
+    const section = document.querySelector('[data-spiral]');
+    if (!section) return;
+    const reduced = prefersReducedMotion();
+    const copy = section.querySelector('[data-spiral-copy]');
+    const images = JSON.parse(section.querySelector('[data-vortex-images]').textContent);
+    let vortex = null;
+    let dead = false;
+    import('../scripts/vortex.js').then(({ mountVortex }) => {
+      if (!dead) vortex = mountVortex(section.querySelector('[data-vortex]'), { images, reducedMotion: reduced });
+    });
+    let raf = 0;
+    const loop = () => {
+      raf = requestAnimationFrame(loop);
+      const r = section.getBoundingClientRect();
+      const p = clamp(-r.top / Math.max(1, r.height - window.innerHeight), 0, 1);
+      vortex?.setScroll(p);
+      vortex?.setVisible(r.bottom > 0);
+      copy.style.opacity = String(1 - smooth(0.05, 0.4, p));
+      copy.style.transform = reduced ? '' : `translateY(${-p * 60}px) scale(${1 - p * 0.06})`;
+    };
+    raf = requestAnimationFrame(loop);
+    return () => {
+      dead = true;
+      cancelAnimationFrame(raf);
+      vortex?.destroy();
+    };
+  });
+</script>

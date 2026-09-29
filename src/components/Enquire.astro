@@ -1,6 +1,7 @@
 ---
 // Short enquiry form, handled by Netlify Forms (no server code): submissions appear in
 // Netlify → Forms, with email notifications if you switch them on there.
+import { sales } from '../data.js';
 import { WHATSAPP_MESSAGE, WHATSAPP_NUMBER } from '../lib/config.js';
 
 const whatsapp = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}` : null;
@@ -46,6 +47,13 @@ const whatsapp = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${enco
         <option selected>Film & photography</option>
         <option>Film</option>
         <option>Photography</option>
+      </select>
+    </div>
+    <div class="field field--wide">
+      <label for="f-package" class="label">Collection</label>
+      <select id="f-package" name="package">
+        <option value="undecided" selected>Not sure yet — help us choose</option>
+        {sales.packages.map((p) => <option value={p.id}>{p.name} · from {p.priceFrom}</option>)}
       </select>
     </div>
     <div class="field field--wide">

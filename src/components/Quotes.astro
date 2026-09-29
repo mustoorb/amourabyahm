@@ -1,0 +1,112 @@
+---
+// Couple quotes, one at a time: fades between them, auto-advances while on screen,
+// swipe or tap the dots to move. Pauses on hover and for reduced motion.
+import { sales } from '../data.js';
+---
+
+<div class="words" data-words>
+  {sales.sample && <span class="sample label">Sample quotes — replace in src/data.js</span>}
+  <div class="words__stack" data-words-stack>
+    {
+      sales.quotes.map((q, i) => (
+        <figure class:list={['words__q', { 'is-on': i === 0 }]} data-q aria-hidden={i === 0 ? undefined : 'true'}>
+          <blockquote class="display words__text">“{q.text}”</blockquote>
+          <figcaption class="label">
+            {q.who} <span class="label--dim">— {q.where}</span>
+          </figcaption>
+        </figure>
+      ))
+    }
+  </div>
+  <div class="words__dots" role="tablist" aria-label="Quotes">
+    {sales.quotes.map((q, i) => <button type="button" role="tab" data-dot={i} aria-selected={i === 0 ? 'true' : 'false'} aria-label={`Quote from ${q.who}`} />)}
+  </div>
+</div>
+
+<style>
+  .words { display: grid; justify-items: center; gap: 36px; text-align: center; }
+  .words__stack { display: grid; width: 100%; max-width: 1100px; touch-action: pan-y; }
+  .words__q { grid-area: 1 / 1; margin: 0; display: grid; gap: 28px; justify-items: center; align-content: center; opacity: 0; transform: translateY(14px); filter: blur(4px); transition: opacity 1.1s var(--ease), transform 1.1s var(--ease), filter 1.1s var(--ease); pointer-events: none; }
+  .words__q:global(.is-on) { opacity: 1; transform: none; filter: none; pointer-events: auto; }
+  .words__text { margin: 0; font-size: clamp(1.9rem, 4.2vw, 3.8rem); line-height: 1.12; }
+  .words__dots { display: flex; gap: 6px; }
+  .words__dots button { width: 44px; height: 32px; display: grid; place-items: center; }
+  .words__dots button::before { content: ''; width: 26px; height: 2px; border-radius: 2px; background: var(--line-2); transition: background 0.5s var(--ease), width 0.5s var(--ease); }
+  .words__dots button[aria-selected='true']::before { background: var(--rose); width: 34px; }
+  .sample { color: #e9c08f; border: 1px dashed rgba(233, 192, 143, 0.5); padding: 5px 10px; border-radius: 999px; font-size: 9.5px; }
+  @media (max-width: 760px) {
+    .words__text { font-size: clamp(1.6rem, 7.4vw, 2.2rem); }
+  }
+</style>
+
+<script>
+  import { onPage, prefersReducedMotion } from '../scripts/lifecycle.js';
+
+  onPage(() => {
+    const root = document.querySelector('[data-words]');
+    if (!root) return;
+    const qs = [...root.querySelectorAll('[data-q]')];
+    const dots = [...root.querySelectorAll('[data-dot]')];
+    const stack = root.querySelector('[data-words-stack]');
+    let i = 0;
+    const show = (k) => {
+      i = (k + qs.length) % qs.length;
+      qs.forEach((q, j) => {
+        q.classList.toggle('is-on', j === i);
+        if (j === i) q.removeAttribute('aria-hidden');
+        else q.setAttribute('aria-hidden', 'true');
+      });
+      dots.forEach((d, j) => d.setAttribute('aria-selected', String(j === i)));
+    };
+    const onDot = (e) => {
+      show(Number(e.currentTarget.dataset.dot));
+      restart();
+    };
+    dots.forEach((d) => d.addEventListener('click', onDot));
+
+    // swipe
+    let sx = null;
+    const down = (e) => (sx = e.clientX);
+    const up = (e) => {
+      if (sx === null) return;
+      const dx = e.clientX - sx;
+      sx = null;
+      if (Math.abs(dx) > 40) {
+        show(i + (dx < 0 ? 1 : -1));
+        restart();
+      }
+    };
+    stack.addEventListener('pointerdown', down);
+    stack.addEventListener('pointerup', up);
+
+    // auto-advance while visible and not hovered
+    let timer = 0;
+    let visible = false;
+    let hover = false;
+    const restart = () => {
+      clearInterval(timer);
+      if (prefersReducedMotion() || !visible || hover) return;
+      timer = setInterval(() => show(i + 1), 7000);
+    };
+    const io = new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      restart();
+    });
+    io.observe(root);
+    const enter = () => {
+      hover = true;
+      restart();
+    };
+    const leave = () => {
+      hover = false;
+      restart();
+    };
+    root.addEventListener('mouseenter', enter);
+    root.addEventListener('mouseleave', leave);
+
+    return () => {
+      clearInterval(timer);
+      io.disconnect();
+    };
+  });
+</script>

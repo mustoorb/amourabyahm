@@ -1,0 +1,314 @@
+---
+// The memory corridor as a scroll-driven section of the home page.
+// The stage is pinned while the page scrolls; scroll position moves the camera from
+// frame to frame. Snap points keep every stop framed: CSS scroll-snap on touch
+// (one swipe = one frame), a gentle JS snap for mouse/trackpad.
+import { metaLine } from '../lib/content.js';
+import { heroName } from '../lib/vt.js';
+
+interface Props {
+  stories: any[];
+}
+const { stories } = Astro.props;
+const json = JSON.stringify(stories).replace(/</g, '\\u003c');
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+<section class="cs" id="stories" data-cs aria-label="Featured stories">
+  <div class="cs__stage" data-corridor>
+    <div class="cs__canvas" data-corridor-canvas></div>
+    <div class="cs__films" data-corridor-films aria-hidden="true"></div>
+    <span class="cs__new badge-new" data-corridor-new aria-hidden="true">NEW</span>
+
+    <!-- Crawlable list of the featured stories; the no-WebGL fallback too. -->
+    <ol class="cs__list">
+      {
+        stories.map((s, i) => (
+          <li>
+            <a href={`/story/${s.slug}`}>
+              <img src={s.coverSm} alt="" loading="lazy" decoding="async" />
+              <span class="label">{pad(i + 1)}</span>
+              <span class="cs__list-title">{s.title}</span>
+              <span class="label label--dim">{[...s.tags, s.year].join(' · ')}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+
+    <div class="cs__caption" data-caption aria-live="polite">
+      <span class="cs__progress" aria-hidden="true"><i data-cap-progress></i></span>
+      <p class="label cs__cap-top">
+        <span data-cap-index>01</span><span class="label--dim"> / {pad(stories.length)}</span>
+        <span class="badge-new" data-cap-new>NEW</span>
+      </p>
+      <h2 class="display display--md cs__cap-title"><a data-cap-link href={`/story/${stories[0]?.slug}`}>{stories[0]?.title}</a></h2>
+      <p class="label label--dim cs__cap-meta" data-cap-meta>{stories[0] && metaLine(stories[0]).join(' · ')}</p>
+      <a class="link-arrow label" data-cap-link href={`/story/${stories[0]?.slug}`}>View story <span aria-hidden="true">→</span></a>
+    </div>
+
+    <ol class="cs__ticks" aria-label="Jump to story">
+      {
+        stories.map((s, i) => (
+          <li>
+            <button type="button" data-tick={i} aria-label={`${s.title}, ${s.year}`} aria-current={i === 0 ? 'true' : undefined}>
+              <span class="label">{pad(i + 1)}</span>
+            </button>
+          </li>
+        ))
+      }
+    </ol>
+
+    <a class="cs__skip label" href="#after" data-skip>Skip to collections <span aria-hidden="true">↓</span></a>
+  </div>
+  <div class="cs__snaps" data-snaps aria-hidden="true"></div>
+  <script type="application/json" data-stories set:html={json} />
+</section>
+
+<style>
+  .cs { position: relative; --step: 46svh; }
+  .cs__stage { position: sticky; top: 0; height: 100svh; overflow: hidden; background: radial-gradient(90% 70% at 50% 48%, #1a1411 0%, var(--bg) 70%); }
+  .cs__canvas, .cs__films { position: absolute; inset: 0; }
+  .cs__canvas :global(canvas) { display: block; width: 100%; height: 100%; outline: none; }
+  .cs__films { pointer-events: none; z-index: 2; }
+  .cs__films :global(.corridor__film) { position: absolute; left: 0; top: 0; overflow: hidden; opacity: 0; transition: opacity 1.2s var(--ease); will-change: transform; }
+  .cs__films :global(.corridor__film.is-on) { opacity: 1; }
+  .cs__films :global(iframe) { position: absolute; inset: -2%; width: 104%; height: 104%; border: 0; pointer-events: none; }
+  .cs__new { position: absolute; left: 0; top: 0; z-index: 3; opacity: 0; transition: opacity 0.6s var(--ease); pointer-events: none; }
+  .cs__new:global(.is-on) { opacity: 1; }
+
+  .cs__list { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); margin: 0; padding: 0; list-style: none; }
+  .cs__list img { display: none; }
+  .cs:global(.is-fallback) .cs__list { position: absolute; inset: 0; width: auto; height: auto; clip: auto; display: flex; gap: 20px; align-items: center; padding: 0 var(--gutter); overflow-x: auto; scroll-snap-type: x mandatory; }
+  .cs:global(.is-fallback) .cs__list li { flex: 0 0 min(72vw, 340px); scroll-snap-align: center; }
+  .cs:global(.is-fallback) .cs__list a { display: grid; gap: 10px; }
+  .cs:global(.is-fallback) .cs__list img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 6px; }
+  .cs:global(.is-fallback) :is(.cs__caption, .cs__ticks) { display: none; }
+  .cs__list-title { font-family: var(--serif); font-style: italic; font-size: 2rem; line-height: 1; }
+
+  .cs__caption { position: absolute; left: var(--gutter); bottom: 96px; z-index: 5; max-width: min(560px, 80vw); display: grid; gap: 14px; opacity: 0; transform: translateY(16px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); }
+  .cs__caption:global(.is-on) { opacity: 1; transform: none; }
+  .cs__caption:global(.is-swapping) { opacity: 0; transform: translateY(10px); transition-duration: 0.35s; }
+  .cs__cap-top { display: flex; align-items: center; gap: 10px; }
+  .cs__cap-title { text-shadow: 0 2px 40px rgba(0, 0, 0, 0.5); }
+  .cs__caption .link-arrow { justify-self: start; }
+  [data-cap-new][hidden] { display: none; }
+  .cs__progress { display: none; }
+
+  .cs__ticks { position: absolute; right: var(--gutter); top: 50%; transform: translateY(-50%); z-index: 5; list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; opacity: 0; transition: opacity 1s var(--ease); }
+  .cs:global(.is-revealed) .cs__ticks { opacity: 1; }
+  .cs__ticks button { display: flex; align-items: center; gap: 10px; padding: 3px 0; flex-direction: row-reverse; }
+  .cs__ticks button::before { content: ''; width: 14px; height: 1px; background: var(--ink-3); transition: width 0.6s var(--ease), background 0.6s var(--ease); }
+  .cs__ticks .label { opacity: 0; transition: opacity 0.4s var(--ease); font-size: 10px; }
+  .cs__ticks button:hover .label, .cs__ticks button[aria-current='true'] .label { opacity: 1; }
+  .cs__ticks button[aria-current='true']::before { width: 34px; background: var(--ink); }
+
+  .cs__skip { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); z-index: 5; color: var(--ink-3); padding: 8px 12px; transition: color 0.4s var(--ease), opacity 0.6s var(--ease); opacity: 0; }
+  .cs:global(.is-revealed) .cs__skip { opacity: 1; }
+  @media (hover: hover) { .cs__skip:hover { color: var(--ink); } }
+
+  .cs__snaps { position: absolute; left: 0; top: 0; width: 1px; height: 100%; pointer-events: none; }
+  .cs__snaps :global(i) { position: absolute; left: 0; width: 1px; height: 1px; scroll-snap-align: start; scroll-snap-stop: always; }
+
+  @media (max-width: 760px) {
+    .cs { --step: 52svh; }
+    .cs__caption { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 70px); right: var(--gutter); max-width: none; gap: 10px; }
+    .cs__cap-title { font-size: clamp(2.2rem, 10vw, 2.8rem); }
+    .cs__cap-meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cs__ticks { display: none; }
+    .cs__progress { display: block; height: 1px; background: var(--line); overflow: hidden; margin-bottom: 4px; }
+    .cs__progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--rose), var(--gold)); transform-origin: left; transform: scaleX(0); transition: transform 0.8s var(--ease); }
+    .cs__skip { left: auto; right: 8px; bottom: auto; top: calc(max(12px, env(safe-area-inset-top)) + 60px); transform: none; font-size: 10px; }
+  }
+</style>
+
+<style is:global>
+  /* Touch: native proximity snapping onto each corridor frame (one swipe = one frame). */
+  @media (hover: none) {
+    html:has([data-cs]) { scroll-snap-type: y proximity; }
+  }
+</style>
+
+<script>
+  import { navigate } from 'astro:transitions/client';
+  import { setCursor } from '../scripts/cursor.js';
+  import { onPage, prefersReducedMotion } from '../scripts/lifecycle.js';
+  import { chime, tick } from '../scripts/sound.js';
+  import { heroName } from '../lib/vt.js';
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+  onPage(() => {
+    const section = document.querySelector('[data-cs]');
+    if (!section) return;
+    let cleanup = null;
+    let dead = false;
+    import('../scripts/corridor.js').then(({ mountCorridor }) => {
+      if (!dead) cleanup = start(section, mountCorridor);
+    });
+    return () => {
+      dead = true;
+      cleanup?.();
+    };
+  });
+
+  function start(section, mountCorridor) {
+    const stage = section.querySelector('[data-corridor]');
+    const stories = JSON.parse(section.querySelector('[data-stories]').textContent);
+    const reduced = prefersReducedMotion();
+    const caption = stage.querySelector('[data-caption]');
+    const capIndex = stage.querySelector('[data-cap-index]');
+    const capNew = stage.querySelector('[data-cap-new]');
+    const capMeta = stage.querySelector('[data-cap-meta]');
+    const capLinks = stage.querySelectorAll('[data-cap-link]');
+    const capTitle = stage.querySelector('.cs__cap-title a');
+    const capProgress = stage.querySelector('[data-cap-progress]');
+    const ticks = [...stage.querySelectorAll('[data-tick]')];
+    const snaps = section.querySelector('[data-snaps]');
+
+    const meta = (s) => {
+      const photos = s.media.filter((m) => m.type === 'image').length;
+      const films = s.media.filter((m) => m.type === 'video').length;
+      return [...s.tags, s.year, `${photos} photos`, films ? `${films} film${films > 1 ? 's' : ''}` : null].filter(Boolean).join(' · ');
+    };
+    let shown = -1;
+    let swapTimer = 0;
+    function showStory(si) {
+      if (si === shown) return;
+      const first = shown === -1;
+      shown = si;
+      const s = stories[si];
+      const paint = () => {
+        capIndex.textContent = String(si + 1).padStart(2, '0');
+        capNew.hidden = si !== 0;
+        capTitle.textContent = s.title;
+        capMeta.textContent = meta(s);
+        capLinks.forEach((a) => a.setAttribute('href', `/story/${s.slug}`));
+        capProgress.style.transform = `scaleX(${(si + 1) / stories.length})`;
+        ticks.forEach((b, i) => (i === si ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current')));
+        caption.classList.remove('is-swapping');
+      };
+      clearTimeout(swapTimer);
+      if (first) paint();
+      else {
+        caption.classList.add('is-swapping');
+        swapTimer = setTimeout(paint, 300);
+      }
+    }
+
+    async function openStory(slug, { rect, src }) {
+      chime();
+      if (rect && !reduced && document.startViewTransition) {
+        const img = new Image();
+        img.alt = '';
+        img.src = src;
+        img.className = 'morph';
+        Object.assign(img.style, { position: 'fixed', zIndex: '100', objectFit: 'cover', borderRadius: '6px', pointerEvents: 'none', left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`, viewTransitionName: heroName(slug) });
+        document.body.append(img);
+        await Promise.race([img.decode().catch(() => {}), new Promise((r) => setTimeout(r, 300))]);
+      }
+      navigate(`/story/${slug}`);
+    }
+
+    const corridor = mountCorridor(stage, {
+      stories,
+      scrollDriven: true,
+      reducedMotion: reduced,
+      // one moment (its film, if it has one) per story keeps the scroll a comfortable length
+      knobs: { moments: { desktop: 1, mobile: 1 }, critical: 3 },
+      onChange: ({ storyIndex }) => showStory(storyIndex),
+      onHover: (stop) => {
+        if (stop) tick();
+        setCursor(stop ? 'view' : null, stop ? (stop.kind === 'film' ? 'Watch story →' : 'View story →') : '');
+      },
+      onOpen: openStory,
+    });
+    if (!corridor) {
+      section.classList.add('is-fallback');
+      section.style.height = '100svh';
+      return null;
+    }
+
+    // One snap point per stop; the section is tall enough to scroll through them all.
+    const n = corridor.lastIndex;
+    section.style.height = `calc(100svh + ${n} * var(--step) + 12svh)`;
+    snaps.replaceChildren(
+      ...Array.from({ length: n + 1 }, (_, k) => {
+        const i = document.createElement('i');
+        i.style.top = `calc(${k} * var(--step))`;
+        return i;
+      }),
+    );
+    const snapEls = [...snaps.children];
+    const stopY = (k) => section.getBoundingClientRect().top + window.scrollY + snapEls[clamp(k, 0, n)].offsetTop;
+    const stepPx = () => (n > 0 ? snapEls[1].offsetTop - snapEls[0].offsetTop : 1);
+
+    const scrollToY = (y, dur = 1.1) => {
+      const lenis = window.__lenis;
+      if (lenis) lenis.scrollTo(y, { duration: dur });
+      else window.scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' });
+    };
+    const onTick = (e) => scrollToY(stopY(corridor.firstStopOfStory[Number(e.currentTarget.dataset.tick)] ?? 0), 1.6);
+    ticks.forEach((b) => b.addEventListener('click', onTick));
+
+    // Mouse/trackpad (smooth-scrolled by Lenis): once scrolling rests inside the corridor,
+    // glide to a frame — a small nudge is enough to carry on to the next one.
+    let anchor = 0;
+    let idle = 0;
+    let lastScroll = window.scrollY;
+    let snapping = false;
+    const onScroll = () => {
+      if (!window.__lenis) return;
+      const y = window.scrollY;
+      if (!idle && !snapping) anchor = Math.round((y - stopY(0)) / stepPx());
+      lastScroll = y;
+      clearTimeout(idle);
+      idle = setTimeout(() => {
+        idle = 0;
+        const pos = (window.scrollY - stopY(0)) / stepPx();
+        if (pos < -0.02 || pos > n + 0.02) return; // outside the corridor
+        const dir = pos - anchor;
+        let k = Math.round(pos);
+        if (Math.abs(dir) > 0.1 && Math.abs(dir) < 1.4) k = anchor + Math.sign(dir);
+        k = clamp(k, 0, n);
+        if (Math.abs(pos - k) * stepPx() < 2) return;
+        snapping = true;
+        scrollToY(stopY(k), 0.9);
+        setTimeout(() => {
+          snapping = false;
+          anchor = k;
+        }, 950);
+      }, 140);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    let revealed = false;
+    let raf = 0;
+    const loop = () => {
+      raf = requestAnimationFrame(loop);
+      const r = section.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const onScreen = r.bottom > 0 && r.top < vh;
+      corridor.setActive(onScreen);
+      if (!onScreen) return;
+      corridor.setScrollT(clamp(-r.top / stepPx(), 0, n));
+      if (!revealed && r.top < vh * 0.55) {
+        revealed = true;
+        section.classList.add('is-revealed');
+        caption.classList.add('is-on');
+        corridor.reveal();
+      }
+    };
+    raf = requestAnimationFrame(loop);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(idle);
+      clearTimeout(swapTimer);
+      window.removeEventListener('scroll', onScroll);
+      ticks.forEach((b) => b.removeEventListener('click', onTick));
+      setCursor(null);
+      corridor.destroy();
+    };
+  }
+</script>

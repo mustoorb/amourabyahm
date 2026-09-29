@@ -229,8 +229,37 @@ export const sales = {
     ['14', 'countries'],
     ['2', 'of us, every time'],
   ],
+  /** Collections shown side by side. `featured` gets the "Most chosen" highlight. */
+  packages: [
+    {
+      id: 'essential',
+      name: 'Essential',
+      tagline: 'An intimate day, beautifully kept.',
+      priceFrom: '€6,500',
+      facts: '8 hours · 1 filmmaker + 1 photographer',
+      includes: ['A 6–8 minute graded film', 'Full, hand-edited photo story', 'Private online gallery', 'Delivery within 8 weeks'],
+    },
+    {
+      id: 'signature',
+      name: 'Signature',
+      tagline: 'The whole day, from first look to last dance.',
+      priceFrom: '€9,800',
+      facts: '12 hours · 2 filmmakers + 1 photographer',
+      includes: ['A 12–15 minute feature film', 'One-minute teaser within a week', 'Full photo story + 40-page album', 'Speeches & vows, edited in full', 'Delivery within 6 weeks'],
+      featured: true,
+    },
+    {
+      id: 'heirloom',
+      name: 'Heirloom',
+      tagline: 'Every moment of the celebration, across every day.',
+      priceFrom: '€14,500',
+      facts: 'Multi-day · full team · drone',
+      includes: ['Welcome dinner to farewell brunch', 'Feature film + documentary edit', 'Teaser within 72 hours', 'Heirloom album + parents’ albums', 'Aerial & cinematic drone coverage'],
+    },
+  ],
+  packagesNote: 'Every collection is tailored to your day. Travel within Europe & the UAE is included; destination weddings are quoted on request.',
   offer: {
-    priceFrom: '€8,500',
+    priceFrom: '€6,500',
     bookingYear: 2027,
     note: 'A limited number of dates each season.',
     included: [

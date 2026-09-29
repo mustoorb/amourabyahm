@@ -239,6 +239,9 @@ export function mountCorridor(root, opts) {
 
   const K = { ...KNOBS, ...(opts.knobs || {}) };
   const reduced = !!opts.reducedMotion;
+  // Scroll-driven mode: the page's own scrolling moves you through the corridor
+  // (via setScrollT). Wheel/drag/keys are left to the page; clicks still open stories.
+  const scrollDriven = !!opts.scrollDriven;
   const mobileQuery = window.matchMedia('(max-width: 760px)');
   let isMobile = mobileQuery.matches;
   const saveData = !!navigator.connection?.saveData;
@@ -303,7 +306,7 @@ export function mountCorridor(root, opts) {
 
   const firstStopOfStory = stories.map((_, si) => stops.findIndex((s) => s.storyIndex === si));
   const lastIndex = stops.length - 1;
-  const endT = lastIndex + 0.62; // overshoot past the last frame → "see the archive"
+  const endT = scrollDriven ? lastIndex : lastIndex + 0.62; // overshoot past the last frame → "see the archive"
 
   for (const s of stops) {
     const mat = new THREE.ShaderMaterial({
@@ -541,6 +544,12 @@ export function mountCorridor(root, opts) {
   function onPointerDown(e) {
     if (e.button !== 0) return;
     const touch = e.pointerType !== 'mouse';
+    if (scrollDriven) {
+      // only track the press so a tap/click can open a story; scrolling belongs to the page
+      drag = { id: e.pointerId, touch, x: e.clientX, y: e.clientY, moved: 0, scroll: true };
+      if (touch) pointer.inside = false;
+      return;
+    }
     drag = { id: e.pointerId, touch, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(), moved: 0, v: 0 };
     vel = 0;
     if (touch) {
@@ -566,6 +575,7 @@ export function mountCorridor(root, opts) {
     drag.x = e.clientX;
     drag.y = e.clientY;
     drag.moved += Math.abs(dx) + Math.abs(dy);
+    if (drag.scroll) return;
     // Drag up / left moves you forward.
     const d = -(dy + dx * 0.7) * K.dragSpeed * (isMobile ? 1.6 : 1);
     target += d;
@@ -581,6 +591,15 @@ export function mountCorridor(root, opts) {
   }
   function onPointerUp(e) {
     if (!drag || e.pointerId !== drag.id) return;
+    if (drag.scroll) {
+      const click = e.type === 'pointerup' && drag.moved < 7;
+      drag = null;
+      if (click) {
+        const hit = pick(e.clientX, e.clientY);
+        if (hit) open(hit);
+      }
+      return;
+    }
     const wasClick = drag.moved < 7;
     if (drag.touch && !wasClick) {
       // Phones: one swipe = one frame, like flicking through stories.
@@ -756,15 +775,20 @@ export function mountCorridor(root, opts) {
   let frameCount = 0;
   const startTime = performance.now();
 
+  let active = true;
   function frame(now) {
     raf = requestAnimationFrame(frame);
+    if (!active) {
+      last = now;
+      return;
+    }
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     const time = (now - startTime) / 1000;
     frameCount++;
 
     // inertia + magnetic snap
-    if (!drag) {
+    if (!drag && !scrollDriven) {
       if (Math.abs(vel) > 0.0004) {
         target += vel * dt * 60;
         vel *= Math.pow(K.inertia, dt * 60);
@@ -783,7 +807,7 @@ export function mountCorridor(root, opts) {
         }
       }
     }
-    t += (target - t) * (reduced ? 1 : damp(K.damping, dt));
+    t += (target - t) * (reduced ? 1 : damp(scrollDriven ? 0.22 : K.damping, dt));
     if (Math.abs(target - t) < 0.0002) t = target;
 
     const p = pathAt(clamp(t, 0, endT));
@@ -906,13 +930,13 @@ export function mountCorridor(root, opts) {
   }
 
   const el = renderer.domElement;
-  el.addEventListener('wheel', onWheel, { passive: false });
+  if (!scrollDriven) el.addEventListener('wheel', onWheel, { passive: false });
   el.addEventListener('pointerdown', onPointerDown);
   window.addEventListener('pointermove', onPointerMove, { passive: true });
   window.addEventListener('pointerup', onPointerUp);
   window.addEventListener('pointercancel', onPointerUp);
   el.addEventListener('pointerleave', onPointerLeave);
-  window.addEventListener('keydown', onKey);
+  if (!scrollDriven) window.addEventListener('keydown', onKey);
   window.addEventListener('resize', onResize);
   mobileQuery.addEventListener?.('change', onResize);
 
@@ -924,6 +948,16 @@ export function mountCorridor(root, opts) {
     reveal,
     goTo,
     goToStory,
+    /** Scroll-driven mode: set the camera's target position (in stops). */
+    setScrollT(v) {
+      target = clamp(v, 0, lastIndex);
+    },
+    /** Pause rendering while off screen. */
+    setActive(v) {
+      active = !!v;
+    },
+    lastIndex,
+    firstStopOfStory,
     get t() {
       return t;
     },

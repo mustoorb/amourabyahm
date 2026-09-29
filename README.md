@@ -15,9 +15,9 @@ With no Sanity project configured the site runs on bundled demo stories (`src/da
 
 | Route | Page |
 |---|---|
-| `/` | **Home** — the Memory Corridor (Three.js). Featured stories only. |
+| `/` | **Home**: spiral opening → scroll-driven Memory Corridor (featured stories) → kind words, stats & venues, collections, how we work, enquiry form. |
 | `/story/<slug>` | **Story** — full-bleed hero, meta, masonry of photos + inline films, lightbox, “Next story →”. One static page per wedding. |
-| `/archive` | **Archive** — every story, filterable by tag (`?tag=Paris` is shareable). |
+| `/archive` | **Archive**: every story. On desktop it's an infinite canvas (drag/scroll, pinch or +/− to zoom). Phones get a two-up grid. Filter by tag (`?tag=Paris` is shareable). |
 | `/about` | **About** — studio, people, process, contact. |
 | `/admin` | **Sanity Studio** — live once `SANITY_PROJECT_ID` is set; a setup note until then. |
 | `/lab` | Hero-gallery concepts (not indexed): corridor tuning panel, scroll-story, memory wall. |
@@ -107,25 +107,24 @@ Order is newest-first: featured → year → created date. `SPHERE_CAP` (in the 
 - A film preview in the corridor and the optional hero loop use Vimeo `background=1`. The video owner needs a Vimeo Plus plan or higher for that player to render. YouTube embeds always work.
 - Film posters: an uploaded poster in Sanity always works. Otherwise the build uses the provider thumbnail (Vimeo via oEmbed, YouTube via `i.ytimg.com`). If a thumbnail host blocks cross-origin use, the corridor draws a titled placeholder frame for that film.
 
-## Home v2 preview (`/lab/home-v2`, `/lab/archive-v2`)
+## Home page, top to bottom
 
-A sales-focused home page, built as a film in three acts. It isn't the live home page yet; it's a preview to compare against the current one.
-
-- **I · the spiral** (`src/scripts/vortex.js`, knobs in `VORTEX`): a Cosmos-style vortex of wedding frames. It rushes in, calms behind the headline and a Let's Talk button, and scrolling flies you into it.
-- **II · the stories:** Inkwell-style scroll scenes, one per featured wedding (max 6).
-  - Each scene opens from a framed card to full screen over a warm dusk gradient, and the title rises in.
-  - Muted film loops play on desktop.
-  - Couple quotes, stats and a venue marquee sit between scenes.
-  - A **pathfinder** at the top shows the chapter.
-- **III · yours:** the offer ("Collections from…", booking year, what's included), the process, and the **enquiry form** (`src/components/Enquire.astro`).
-- **Always one tap away:** Let's Talk (goes to the form) and a WhatsApp button. Desktop gets inertial smooth scrolling (Lenis); phones keep native scrolling.
-- **Archive v2:** a Cash App-style infinite canvas on desktop. Drag or scroll to wander, pinch or +/− to zoom, filter by tag. Phones get the two-up grid.
+1. **Spiral** (`src/components/Spiral.astro`, `src/scripts/vortex.js`): wedding frames rush in along spiral arms and calm behind the headline, with Let's Talk and See the stories. Scrolling flies you in.
+2. **Memory Corridor, scroll-driven** (`src/components/CorridorScroll.astro`): the stage is pinned while you scroll, and each scroll step moves the camera one frame. There's one cover plus one moment (its film if it has one) per featured story.
+   - **Touch:** native scroll-snap with `scroll-snap-stop`, so one swipe moves one frame.
+   - **Mouse/trackpad:** smooth-scrolled (Lenis) with a gentle, direction-aware snap.
+   - "Skip to collections" jumps past it.
+3. **Section menu** (Stories · Kind words · Collections · How we work · Enquire): pinned under the header once you're past the corridor, and it highlights where you are.
+4. **Kind words** (`Quotes.astro`) → stats & venue marquee → **Collections** (`Packages.astro`) → **How we work** → **Enquiry form** (`Enquire.astro`).
+   - Each "Enquire about …" button pre-selects that collection in the form.
+   - WhatsApp floats one tap away.
 
 To finish it:
-1. **Sample content:** quotes, stats, venues and the offer are placeholders in `src/data.js` → `sales`. Replace them, then set `sample: false` to remove the "Sample" tags.
+1. **Sample content:** quotes, stats, venues and the three collections are placeholders in `src/data.js` → `sales`. Replace them, then set `sample: false` to remove the dashed "Sample" tags.
 2. **WhatsApp:** set `PUBLIC_WHATSAPP_NUMBER` (digits, international format) in Netlify env vars, or in `src/lib/config.js`. Until then, WhatsApp buttons go to the form.
-3. **Enquiries:** the form uses **Netlify Forms**. In Netlify → Forms, make sure form detection is enabled, then add an email notification (Forms → Settings → Form notifications) so each enquiry reaches your inbox. Submissions only work on the deployed site, not in local dev.
-4. **Going live:** when you're happy, the v2 page becomes `/` and the corridor moves to its own route ("Step inside").
+3. **Enquiries:** the form uses **Netlify Forms**. In Netlify → Forms, make sure form detection is enabled, then add an email notification so each enquiry reaches your inbox. Submissions only work on the deployed site, not in local dev.
+
+`/lab/home-v2` keeps the earlier three-act preview for reference, and `/lab/corridor` keeps the full-screen corridor with its tuning panel.
 
 ## Not in this repo
 
