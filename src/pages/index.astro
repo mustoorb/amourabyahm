@@ -9,13 +9,15 @@ import Spiral from '../components/Spiral.astro';
 import Base from '../layouts/Base.astro';
 import { sales, studio } from '../data.js';
 import { WHATSAPP_MESSAGE, WHATSAPP_NUMBER } from '../lib/config.js';
-import { getFeatured, getStories } from '../lib/content.js';
+import { getCorridor, getSpiral, getStories } from '../lib/content.js';
 
 const all = await getStories();
-const featured = await getFeatured();
+const spiral = await getSpiral(); // "Show in spiral" weddings
+const corridor = await getCorridor(); // 8 latest + pinned
+const featured = corridor;
 const spiralImages = [
-  ...featured.map((s) => ({ src: s.coverSm, aspect: s.coverAspect })),
-  ...featured.flatMap((s) => s.media.filter((m) => m.type === 'image').slice(0, 2).map((m) => ({ src: m.thumb, aspect: m.aspect }))),
+  ...spiral.map((s) => ({ src: s.coverSm, aspect: s.coverAspect })),
+  ...spiral.flatMap((s) => s.media.filter((m) => m.type === 'image').slice(0, 2).map((m) => ({ src: m.thumb, aspect: m.aspect }))),
 ].slice(0, 20);
 const whatsapp = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}` : '#enquire';
 const waAttrs = WHATSAPP_NUMBER ? { target: '_blank', rel: 'noopener' } : {};
@@ -31,7 +33,7 @@ const sections = [
 
 <Base view="gallery" talk="#enquire" bodyClass="home" image={featured[0]?.cover}>
   <Spiral images={spiralImages} />
-  <CorridorScroll stories={featured} />
+  <CorridorScroll stories={corridor} />
 
   <div class="below" id="after" data-chrome-solid-from>
     <nav class="secnav" data-secnav aria-label="On this page">

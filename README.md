@@ -68,11 +68,17 @@ Motion respects `prefers-reduced-motion` everywhere: there's no inertia, float o
 }
 ```
 
-Order is newest-first: featured → year → created date. `SPHERE_CAP` (in the same file) caps how many featured stories the hero shows.
+Order is newest wedding first (by **wedding date**). Where each story appears:
+
+| Place | Shows |
+|---|---|
+| **Spiral** (home, top) | Stories ticked **"Show in spiral"**, newest first (up to `SPIRAL_CAP`, 12) |
+| **Memory corridor** (home) | The **8 latest** weddings automatically (`CORRIDOR_COUNT`), plus any ticked **"Pin to corridor"**. The newest is always first and gets the **NEW** badge. |
+| **Archive** | Every story |
 
 ### Sanity schema (`src/schemaTypes/`)
 
-- **story**: title, slug, year, `featured` (“Show on hero”), tags, description, **cover** (required), **gallery** (drag-orderable `photo` + `videoEmbed`), `heroLoop`.
+- **story**: title, slug, **wedding date** (required, sets the order), `featured` (“Show in spiral”), `pinned` (“Pin to corridor”), tags, description, **cover** (required), **gallery** (drag-orderable `photo` + `videoEmbed`), `heroLoop`.
 - **photo**: image (hotspot) + optional alt text.
 - **videoEmbed**: provider (vimeo/youtube), video id (a pasted URL works too), optional poster.
 

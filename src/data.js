@@ -30,15 +30,17 @@ const P = 2 / 3; // portrait
 const L = 3 / 2; // landscape
 const S = 4 / 5; // near-square portrait
 
-function story({ slug, title, tags, year, created, featured = true, desc, cover, media, heroLoop = false }) {
+function story({ slug, title, tags, year, created, date = created, featured = true, pinned = false, desc, cover, media, heroLoop = false }) {
   const c = photo(cover[0], cover[1]);
   return {
     slug,
     brand: 'AMOURA',
     title,
     tags,
+    date,
     year,
     featured,
+    pinned,
     created,
     desc,
     heroLoop,

@@ -8,7 +8,7 @@ import { heroName } from '../lib/vt.js';
 
 const stories = await getStories();
 const tags = tagCounts(stories);
-const newestSlug = stories.find((s) => s.featured)?.slug;
+const newestSlug = stories[0]?.slug;
 const newest = newestSlug;
 const COPIES = 3; // the canvas world is tiled 3×3 so it wraps seamlessly in every direction
 ---

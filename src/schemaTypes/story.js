@@ -14,17 +14,25 @@ export const story = defineType({
       validation: (r) => r.required(),
     }),
     defineField({
-      name: 'year',
-      title: 'Year',
-      type: 'number',
-      initialValue: () => new Date().getFullYear(),
-      validation: (r) => r.required().integer().min(2000).max(2100),
+      name: 'date',
+      title: 'Wedding date',
+      type: 'date',
+      description: 'Sets the order everywhere. The newest wedding goes first, with the NEW badge.',
+      options: { dateFormat: 'D MMMM YYYY' },
+      validation: (r) => r.required(),
     }),
     defineField({
       name: 'featured',
-      title: 'Show on hero',
+      title: 'Show in spiral',
       type: 'boolean',
-      description: 'Featured stories appear in the home gallery. Every story is always in the Archive.',
+      description: 'Include this wedding in the spiral at the top of the home page.',
+      initialValue: true,
+    }),
+    defineField({
+      name: 'pinned',
+      title: 'Pin to corridor',
+      type: 'boolean',
+      description: 'The memory corridor shows your 8 latest weddings automatically. Pin an older one to keep it there too.',
       initialValue: false,
     }),
     defineField({
@@ -62,20 +70,19 @@ export const story = defineType({
   ],
   orderings: [
     {
-      title: 'Newest first',
+      title: 'Newest wedding first',
       name: 'newest',
       by: [
-        { field: 'featured', direction: 'desc' },
-        { field: 'year', direction: 'desc' },
+        { field: 'date', direction: 'desc' },
         { field: '_createdAt', direction: 'desc' },
       ],
     },
   ],
   preview: {
-    select: { title: 'title', year: 'year', featured: 'featured', media: 'cover' },
-    prepare: ({ title, year, featured, media }) => ({
+    select: { title: 'title', date: 'date', featured: 'featured', pinned: 'pinned', media: 'cover' },
+    prepare: ({ title, date, featured, pinned, media }) => ({
       title,
-      subtitle: [year, featured ? '★ hero' : null].filter(Boolean).join(' · '),
+      subtitle: [date, featured ? 'spiral' : null, pinned ? '📌 corridor' : null].filter(Boolean).join(' · '),
       media,
     }),
   },

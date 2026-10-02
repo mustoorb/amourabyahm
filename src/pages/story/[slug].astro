@@ -10,7 +10,7 @@ export async function getStaticPaths() {
   const stories = await getStories();
   return stories.map((story, i) => ({
     params: { slug: story.slug },
-    props: { story, next: stories[(i + 1) % stories.length], isNewest: i === 0 && story.featured },
+    props: { story, next: stories[(i + 1) % stories.length], isNewest: i === 0 },
   }));
 }
 

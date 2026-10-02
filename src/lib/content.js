@@ -1,7 +1,7 @@
 // The one place pages get stories from. Returns the normalised shape:
 //
 // {
-//   slug, brand:'AMOURA', title, tags[], year, featured, created, desc, heroLoop,
+//   slug, brand:'AMOURA', title, tags[], date, year, featured, pinned, created, desc, heroLoop,
 //   cover, coverSm, coverLqip, coverAspect,
 //   media: [
 //     { type:'image', full, thumb, lqip, aspect, alt? },
@@ -16,14 +16,24 @@ import { createImageUrlBuilder } from '@sanity/image-url';
 import { demoStories } from '../data.js';
 import { SANITY_API_VERSION, SANITY_DATASET, SANITY_PROJECT_ID } from './config.js';
 
-/** Max stories on the home gallery. Keeps it clean and fast at any catalogue size. */
-export const SPHERE_CAP = 12;
+// Where stories appear:
+//   Spiral   — stories ticked "Show in spiral" (`featured`), newest first, up to SPIRAL_CAP.
+//   Corridor — the CORRIDOR_COUNT latest weddings, plus any ticked "Pin to corridor".
+//   Archive  — every story.
+// Newest = latest wedding date. The newest story gets the NEW badge everywhere.
+
+/** Max stories feeding the spiral (it shows a mix of their covers and photos). */
+export const SPIRAL_CAP = 12;
+/** How many weddings the memory corridor shows. */
+export const CORRIDOR_COUNT = 8;
+/** @deprecated old name for SPIRAL_CAP */
+export const SPHERE_CAP = SPIRAL_CAP;
 
 const QUERY = /* groq */ `
 *[_type == "story" && defined(slug.current) && defined(cover.asset)]
-  | order(featured desc, year desc, _createdAt desc) {
+  | order(date desc, _createdAt desc) {
     "slug": slug.current,
-    title, year, featured, tags, description, heroLoop, _createdAt,
+    title, date, featured, pinned, tags, description, heroLoop, _createdAt,
     cover { ..., asset->{ _id, metadata { lqip, dimensions } } },
     gallery[] {
       _type, _key, alt, provider, videoId,
@@ -41,14 +51,31 @@ export async function getStories() {
   return cache;
 }
 
-/**
- * Hero stories: featured only, newest first, capped at SPHERE_CAP.
- * The first one is "newest" — it gets the NEW badge and is framed on load.
- */
-export async function getFeatured() {
+/** Spiral: stories ticked "Show in spiral", newest first (falls back to the latest if none are ticked). */
+export async function getSpiral() {
   const all = await getStories();
   const featured = all.filter((s) => s.featured);
-  return (featured.length ? featured : all).slice(0, SPHERE_CAP);
+  return (featured.length ? featured : all).slice(0, SPIRAL_CAP);
+}
+
+/** Older name, still used by the /lab prototypes. */
+export const getFeatured = getSpiral;
+
+/**
+ * Corridor: the newest wedding always, then anything pinned, then the latest ones,
+ * up to CORRIDOR_COUNT — shown newest first.
+ */
+export async function getCorridor() {
+  const all = await getStories();
+  const pick = new Set(all.slice(0, 1).map((s) => s.slug));
+  for (const s of all) if (pick.size < CORRIDOR_COUNT && s.pinned) pick.add(s.slug);
+  for (const s of all) if (pick.size < CORRIDOR_COUNT) pick.add(s.slug);
+  return all.filter((s) => pick.has(s.slug));
+}
+
+/** Slug of the newest wedding (gets the NEW badge). */
+export async function getNewestSlug() {
+  return (await getStories())[0]?.slug;
 }
 
 export async function getStory(slug) {
@@ -95,11 +122,10 @@ export function embedUrl(v, { autoplay = false, ambient = false } = {}) {
 
 // ---------------------------------------------------------------------------
 
+/** Newest wedding first: by wedding date, then by when it was added. */
 function sortNewest(stories) {
-  const featuredRank = (s) => (s.featured ? 1 : 0);
-  return [...stories].sort(
-    (a, b) => featuredRank(b) - featuredRank(a) || b.year - a.year || String(b.created).localeCompare(String(a.created)),
-  );
+  const key = (s) => s.date || `${s.year || 0}-00-00`;
+  return [...stories].sort((a, b) => key(b).localeCompare(key(a)) || String(b.created).localeCompare(String(a.created)));
 }
 
 async function fetchSanity() {
@@ -153,8 +179,10 @@ export async function normalizeSanity(docs, builder) {
         brand: 'AMOURA',
         title: d.title,
         tags: d.tags || [],
-        year: d.year,
+        date: d.date || null,
+        year: d.date ? Number(String(d.date).slice(0, 4)) : new Date(d._createdAt).getFullYear(),
         featured: !!d.featured,
+        pinned: !!d.pinned,
         created: d._createdAt,
         desc: d.description || '',
         heroLoop: !!d.heroLoop,
