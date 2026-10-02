@@ -8,7 +8,7 @@ const penv = typeof process !== 'undefined' && process.env ? process.env : {};
 const read = (key, fallback) => env[key] || penv[key] || fallback;
 
 /** Sanity project id (public). Leave empty to run on the bundled demo data in src/data.js. */
-export const SANITY_PROJECT_ID = read('PUBLIC_SANITY_PROJECT_ID', '');
+export const SANITY_PROJECT_ID = read('PUBLIC_SANITY_PROJECT_ID', 'jtcvm9zo');
 
 /** Sanity dataset name. */
 export const SANITY_DATASET = read('PUBLIC_SANITY_DATASET', 'production');

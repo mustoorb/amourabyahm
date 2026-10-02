@@ -47,7 +47,7 @@ let cache;
 
 /** All stories, newest first. */
 export async function getStories() {
-  cache ??= (SANITY_PROJECT_ID ? fetchSanity() : Promise.resolve(demoStories())).then(sortNewest);
+  cache ??= (SANITY_PROJECT_ID ? fetchSanity().then(orDemo) : Promise.resolve(demoStories())).then(sortNewest);
   return cache;
 }
 
@@ -126,6 +126,19 @@ export function embedUrl(v, { autoplay = false, ambient = false } = {}) {
 function sortNewest(stories) {
   const key = (s) => s.date || `${s.year || 0}-00-00`;
   return [...stories].sort((a, b) => key(b).localeCompare(key(a)) || String(b.created).localeCompare(String(a.created)));
+}
+
+/**
+ * Until the first story is published in Sanity, keep the site looking complete with
+ * the demo stories. (An empty result can also mean the dataset isn't Public.)
+ */
+function orDemo(stories) {
+  if (stories.length) return stories;
+  console.warn(
+    `[amoura] Sanity project "${SANITY_PROJECT_ID}" (${SANITY_DATASET}) returned no published stories — showing demo stories for now. ` +
+      'If you have published stories, check the dataset is set to Public in sanity.io/manage → Datasets.',
+  );
+  return demoStories();
 }
 
 async function fetchSanity() {
