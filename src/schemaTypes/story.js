@@ -36,6 +36,12 @@ export const story = defineType({
       initialValue: false,
     }),
     defineField({
+      name: 'location',
+      title: 'Location',
+      type: 'location',
+      description: 'Puts this wedding on the globe and in the counts (weddings · countries · places).',
+    }),
+    defineField({
       name: 'tags',
       title: 'Tags',
       type: 'array',

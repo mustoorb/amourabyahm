@@ -39,4 +39,9 @@ export const BRAND = {
     { label: 'Paris', tz: 'Europe/Paris' },
     { label: 'Dubai', tz: 'Asia/Dubai' },
   ],
+  /** Studio bases — the globe draws arcs from the nearest one to each place. */
+  bases: [
+    { label: 'Paris', lat: 48.8566, lng: 2.3522 },
+    { label: 'Dubai', lat: 25.2048, lng: 55.2708 },
+  ],
 };

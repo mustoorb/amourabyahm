@@ -14,6 +14,7 @@
 import { createClient } from '@sanity/client';
 import { createImageUrlBuilder } from '@sanity/image-url';
 import { demoStories } from '../data.js';
+import { parseCoordinates } from './coords.js';
 import { SANITY_API_VERSION, SANITY_DATASET, SANITY_PROJECT_ID } from './config.js';
 
 // Where stories appear:
@@ -33,7 +34,7 @@ const QUERY = /* groq */ `
 *[_type == "story" && defined(slug.current) && defined(cover.asset)]
   | order(date desc, _createdAt desc) {
     "slug": slug.current,
-    title, date, featured, pinned, tags, description, heroLoop, _createdAt,
+    title, date, featured, pinned, tags, description, heroLoop, _createdAt, location,
     cover { ..., asset->{ _id, metadata { lqip, dimensions } } },
     gallery[] {
       _type, _key, alt, provider, videoId,
@@ -80,6 +81,40 @@ export async function getNewestSlug() {
 
 export async function getStory(slug) {
   return (await getStories()).find((s) => s.slug === slug);
+}
+
+/** { place, country, lat, lng } or null when it's missing or the coordinates don't parse. */
+export function normalizeLocation(loc) {
+  if (!loc?.place || !loc?.country) return null;
+  const ll = typeof loc.lat === 'number' ? [loc.lat, loc.lng] : parseCoordinates(loc.coordinates);
+  return ll ? { place: String(loc.place).trim(), country: String(loc.country).trim(), lat: ll[0], lng: ll[1] } : null;
+}
+
+/**
+ * Places we've shot, for the globe: one entry per place+country, with its weddings
+ * (newest first). Stories without a location are simply left off the globe.
+ */
+export async function getPlaces() {
+  const map = new Map();
+  for (const s of await getStories()) {
+    const l = s.location;
+    if (!l) continue;
+    const key = `${l.place}|${l.country}`.toLowerCase();
+    if (!map.has(key)) map.set(key, { place: l.place, country: l.country, lat: l.lat, lng: l.lng, stories: [] });
+    map.get(key).stories.push({ slug: s.slug, title: s.title, year: s.year, cover: s.coverSm });
+  }
+  return [...map.values()].sort((a, b) => b.stories.length - a.stories.length || a.place.localeCompare(b.place));
+}
+
+/** Live counts for the "Where we've been" section — they update with every rebuild. */
+export async function getStats() {
+  const stories = await getStories();
+  const places = await getPlaces();
+  return {
+    weddings: stories.length,
+    countries: new Set(places.map((p) => p.country.toLowerCase())).size,
+    places: places.length,
+  };
 }
 
 /** Tags with counts, most used first. */
@@ -196,6 +231,7 @@ export async function normalizeSanity(docs, builder) {
         year: d.date ? Number(String(d.date).slice(0, 4)) : new Date(d._createdAt).getFullYear(),
         featured: !!d.featured,
         pinned: !!d.pinned,
+        location: normalizeLocation(d.location),
         created: d._createdAt,
         desc: d.description || '',
         heroLoop: !!d.heroLoop,

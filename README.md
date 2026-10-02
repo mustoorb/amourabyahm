@@ -78,7 +78,8 @@ Order is newest wedding first (by **wedding date**). Where each story appears:
 
 ### Sanity schema (`src/schemaTypes/`)
 
-- **story**: title, slug, **wedding date** (required, sets the order), `featured` (“Show in spiral”), `pinned` (“Pin to corridor”), tags, description, **cover** (required), **gallery** (drag-orderable `photo` + `videoEmbed`), `heroLoop`.
+- **story**: title, slug, **wedding date** (required, sets the order), `featured` (“Show in spiral”), `pinned` (“Pin to corridor”), **location**, tags, description, **cover** (required), **gallery** (drag-orderable `photo` + `videoEmbed`), `heroLoop`.
+- **location**: place, country and map coordinates. To get the coordinates, right-click the spot in Google Maps, click the numbers to copy them, and paste. The location puts the wedding on the globe and in the counts. A wedding without a location still appears everywhere else.
 - **photo**: image (hotspot) + optional alt text.
 - **videoEmbed**: provider (vimeo/youtube), video id (a pasted URL works too), optional poster.
 
@@ -121,7 +122,11 @@ Order is newest wedding first (by **wedding date**). Where each story appears:
    - **Mouse/trackpad:** smooth-scrolled (Lenis) with a gentle, direction-aware snap.
    - "Skip to collections" jumps past it.
 3. **Section menu** (Stories · Kind words · Collections · How we work · Enquire): pinned under the header once you're past the corridor, and it highlights where you are.
-4. **Kind words** (`Quotes.astro`) → stats & venue marquee → **Collections** (`Packages.astro`) → **How we work** → **Enquiry form** (`Enquire.astro`).
+4. **Kind words** (`Quotes.astro`) → **Where we've been** (`Globe.astro`) → **Collections** (`Packages.astro`) → **How we work** → **Enquiry form** (`Enquire.astro`).
+   - **Where we've been** shows live counts (weddings covered · countries · places), worked out from the stories, so they update on every rebuild. Next to them is a dotted 3D globe (`src/scripts/globe.js`) with a pin for every place.
+     - Nearby places merge into one numbered pin. Tap it to zoom in, then tap again for a card linking to the weddings there.
+     - Soft arcs run from the studio bases (Paris, Dubai; set in `BRAND.bases` in `config.js`).
+     - The land dots are generated at build time from Natural Earth data (`src/lib/land.js` → `/globe-land.json`). There's no map image anywhere.
    - Each "Enquire about …" button pre-selects that collection in the form.
    - WhatsApp floats one tap away.
 

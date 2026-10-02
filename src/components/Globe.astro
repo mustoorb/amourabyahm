@@ -1,0 +1,253 @@
+---
+// "Where we've been": live counts + a globe of every place we've shot.
+// Everything here is computed from the stories (Sanity), so it updates with each rebuild.
+import { BRAND } from '../lib/config.js';
+import { getPlaces, getStats } from '../lib/content.js';
+
+const places = await getPlaces();
+const stats = await getStats();
+const byCountry = [...places.reduce((m, p) => m.set(p.country, [...(m.get(p.country) || []), p]), new Map())].sort(
+  (a, b) => b[1].reduce((s, p) => s + p.stories.length, 0) - a[1].reduce((s, p) => s + p.stories.length, 0),
+);
+const json = JSON.stringify({ places, bases: BRAND.bases }).replace(/</g, '\\u003c');
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+---
+
+<div class="where" data-where>
+  <div class="where__copy">
+    <p class="label label--dim">Where we’ve been</p>
+    <h2 class="display where__title">Anywhere love takes us.</h2>
+    <ul class="where__stats">
+      <li>
+        <span class="display where__n" data-count-to={stats.weddings}>{stats.weddings}</span>
+        <span class="label label--dim">{plural(stats.weddings, 'wedding', 'weddings')} covered</span>
+      </li>
+      <li>
+        <span class="display where__n" data-count-to={stats.countries}>{stats.countries}</span>
+        <span class="label label--dim">{plural(stats.countries, 'country', 'countries')}</span>
+      </li>
+      <li>
+        <span class="display where__n" data-count-to={stats.places}>{stats.places}</span>
+        <span class="label label--dim">{plural(stats.places, 'place', 'places')}</span>
+      </li>
+    </ul>
+
+  </div>
+
+  <ul class="where__countries">
+    {
+      byCountry.map(([country, ps]) => (
+        <li>
+          <span class="label">{country}</span>
+          <span class="where__places">{ps.map((p) => p.place).join(' · ')}</span>
+        </li>
+      ))
+    }
+  </ul>
+
+  <div class="where__globe" data-globe>
+    <div class="where__canvas" data-globe-canvas></div>
+    <div class="where__pins" data-globe-pins></div>
+    <button type="button" class="where__reset label" data-globe-reset hidden>← Whole world</button>
+    <p class="where__hint label label--dim" data-globe-hint>Drag to spin · tap a pin</p>
+    <div class="where__card" data-globe-card hidden role="dialog" aria-label="Weddings here">
+      <button type="button" class="where__close" data-globe-close aria-label="Close">✕</button>
+      <div data-globe-card-body></div>
+    </div>
+  </div>
+  <script type="application/json" data-globe-data set:html={json} />
+</div>
+
+<style>
+  .where {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); column-gap: clamp(32px, 5vw, 90px); row-gap: 0;
+    grid-template-areas: 'copy globe' 'list globe';
+  }
+  .where__copy { grid-area: copy; display: grid; gap: 22px; align-content: end; }
+  .where__title { font-size: clamp(2.8rem, 5.6vw, 5.4rem); }
+  .where__stats { list-style: none; margin: 10px 0 0; padding: 0; display: flex; gap: clamp(26px, 4vw, 56px); flex-wrap: wrap; }
+  .where__stats li { display: grid; gap: 6px; }
+  .where__n { font-size: clamp(3rem, 5.4vw, 5rem); font-variant-numeric: tabular-nums; }
+  .where__countries { grid-area: list; align-self: start; list-style: none; margin: 34px 0 0; padding: 0; display: grid; gap: 0; }
+  .where__countries li { display: grid; grid-template-columns: minmax(120px, 0.42fr) 1fr; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .where__places { color: var(--ink-2); font-size: 15px; }
+
+  .where__globe { grid-area: globe; align-self: center; position: relative; aspect-ratio: 1; width: 100%; max-width: 720px; justify-self: center; }
+  /* a soft circular edge, so a zoomed-in globe fades out instead of being cut square */
+  .where__canvas { position: absolute; inset: 0; -webkit-mask-image: radial-gradient(closest-side, #000 86%, transparent 100%); mask-image: radial-gradient(closest-side, #000 86%, transparent 100%); }
+  .where__canvas :global(canvas) { display: block; width: 100%; height: 100%; cursor: grab; touch-action: pan-y; }
+  .where__canvas :global(canvas:active) { cursor: grabbing; }
+  .where__pins { position: absolute; inset: 0; pointer-events: none; }
+
+  .where__pins :global(.pin) {
+    position: absolute; left: 0; top: 0; pointer-events: auto;
+    /* a 36px tap target centred on the point */
+    width: 36px; height: 36px; margin: -18px 0 0 -18px; padding: 0; overflow: visible; border-radius: 50%;
+    transition: opacity 0.3s var(--ease);
+  }
+  .where__pins :global(.pin.is-hidden) { opacity: 0 !important; pointer-events: none; }
+  .where__pins :global(.pin__dot) { position: absolute; left: 12px; top: 12px; width: 12px; height: 12px; border-radius: 50%; background: var(--rose); box-shadow: 0 0 0 4px rgba(217, 163, 160, 0.18), 0 0 18px rgba(217, 163, 160, 0.8); }
+  .where__pins :global(.pin__dot)::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 1px solid rgba(217, 163, 160, 0.6); animation: pin-pulse 2.6s var(--ease-io) infinite; }
+  .where__pins :global(.pin.is-cluster .pin__dot) { left: 7px; top: 7px; width: 22px; height: 22px; }
+  .where__pins :global(.pin__count) { position: absolute; left: 18px; top: 18px; transform: translate(-50%, -50%); font-family: var(--mono); font-size: 10px; color: #1a0f0e; pointer-events: none; }
+  .where__pins :global(.pin__label) {
+    position: absolute; left: 32px; top: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink);
+    padding: 3px 8px; border-radius: 999px; background: rgba(12, 10, 9, 0.7);
+    opacity: 0; transform: translateX(-4px); transition: opacity 0.3s var(--ease), transform 0.3s var(--ease); pointer-events: none;
+  }
+  .where__pins :global(.pin:hover .pin__label), .where__pins :global(.pin:focus-visible .pin__label), .where__pins :global(.pin.is-cluster .pin__label) { opacity: 1; transform: none; }
+  .where__pins :global(.pin--base) { pointer-events: none; width: 0; height: 0; margin: 0; }
+  .where__pins :global(.pin--base .pin__dot) { left: -4px; top: -4px; width: 8px; height: 8px; background: var(--gold); box-shadow: 0 0 12px rgba(201, 166, 107, 0.9); }
+  .where__pins :global(.pin--base .pin__dot)::after { display: none; }
+.where__pins :global(.pin--base .pin__label) { opacity: 1; transform: none; color: var(--gold); background: none; left: 9px; top: -8px; transition: opacity 0.4s var(--ease); }
+.where__pins :global(.pin--base.is-quiet) { opacity: 0 !important; }
+  /* near the right edge, labels sit on the left of the pin */
+  .where__pins :global(.pin.is-left .pin__label) { left: auto; right: 32px; transform: translateX(4px); }
+  .where__pins :global(.pin.is-left:hover .pin__label), .where__pins :global(.pin.is-left.is-cluster .pin__label) { transform: none; }
+  @keyframes pin-pulse { 0% { transform: scale(0.6); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
+
+  .where__reset { position: absolute; left: 0; top: 0; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(12, 10, 9, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .where__hint { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); white-space: nowrap; transition: opacity 0.8s var(--ease); pointer-events: none; }
+  .where__hint:global(.is-gone) { opacity: 0; }
+
+  .where__card {
+    position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%); z-index: 5;
+    width: min(380px, 92%); max-height: 62%; overflow: auto;
+    padding: 20px 20px 16px; border-radius: 16px; border: 1px solid var(--line-2);
+    background: rgba(18, 15, 13, 0.9); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+    animation: card-in 0.5s var(--ease);
+  }
+  @keyframes card-in { from { opacity: 0; transform: translate(-50%, 10px); } }
+  .where__close { position: absolute; right: 8px; top: 8px; width: 36px; height: 36px; border-radius: 50%; color: var(--ink-2); }
+  .where__card :global(.gc__place) { display: grid; gap: 4px; margin: 0 0 12px; }
+  .where__card :global(.gc__place + .gc__place) { padding-top: 12px; border-top: 1px solid var(--line); }
+  .where__card :global(.gc__title) { font-family: var(--serif); font-style: italic; font-size: 1.7rem; line-height: 1.05; }
+  .where__card :global(.gc__list) { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+  .where__card :global(.gc__list a) { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: center; }
+  .where__card :global(.gc__list img) { width: 52px; height: 64px; object-fit: cover; border-radius: 3px; background: var(--bg-3); }
+  .where__card :global(.gc__name) { font-family: var(--serif); font-style: italic; font-size: 1.25rem; line-height: 1.1; }
+
+  @media (max-width: 900px) {
+    .where { grid-template-columns: 1fr; grid-template-areas: 'copy' 'globe' 'list'; row-gap: 20px; }
+    .where__globe { max-width: 560px; }
+    .where__countries { margin-top: 0; }
+  }
+  @media (max-width: 760px) {
+    .where__stats { gap: 22px 30px; }
+    .where__n { font-size: clamp(2.6rem, 12vw, 3.4rem); }
+    .where__countries li { grid-template-columns: 1fr; gap: 4px; }
+    .where__globe { margin: 0 calc(-1 * var(--gutter)); width: calc(100% + 2 * var(--gutter)); max-width: none; }
+    .where__card { bottom: 4%; }
+    .where__reset { left: var(--gutter); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .where__pins :global(.pin__dot)::after { animation: none; }
+  }
+</style>
+
+<script>
+  import { onPage, prefersReducedMotion } from '../scripts/lifecycle.js';
+
+  let landCache = null;
+  const loadLand = () => (landCache ??= fetch('/globe-land.json').then((r) => r.json()));
+
+  onPage(() => {
+    const root = document.querySelector('[data-where]');
+    if (!root) return;
+    const reduced = prefersReducedMotion();
+    const globeEl = root.querySelector('[data-globe]');
+    const card = root.querySelector('[data-globe-card]');
+    const cardBody = root.querySelector('[data-globe-card-body]');
+    const reset = root.querySelector('[data-globe-reset]');
+    const hint = root.querySelector('[data-globe-hint]');
+    const { places, bases } = JSON.parse(root.querySelector('[data-globe-data]').textContent);
+
+    // Stats count up the first time they scroll into view.
+    const counters = [...root.querySelectorAll('[data-count-to]')];
+    const countIO = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        countIO.disconnect();
+        if (reduced) return;
+        const t0 = performance.now();
+        const step = (now) => {
+          const k = Math.min(1, (now - t0) / 1400);
+          const e = 1 - Math.pow(1 - k, 3);
+          counters.forEach((c) => (c.textContent = String(Math.round(Number(c.dataset.countTo) * e))));
+          if (k < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      },
+      { threshold: 0.4 },
+    );
+    counters.forEach((c) => {
+      if (!reduced) c.textContent = '0';
+      countIO.observe(c);
+    });
+
+    const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
+    let globe = null;
+    function openCard(members) {
+      cardBody.innerHTML = members
+        .map(
+          (p) => `
+          <div class="gc__place">
+            <span class="label label--dim">${esc(p.country)} · ${p.stories.length} wedding${p.stories.length > 1 ? 's' : ''}</span>
+            <span class="gc__title">${esc(p.place)}</span>
+            <ul class="gc__list">${p.stories
+              .map((s) => `<li><a href="/story/${esc(s.slug)}"><img src="${esc(s.cover)}" alt="" loading="lazy" /><span class="gc__name">${esc(s.title)}</span><span class="label label--dim">${s.year ?? ''} →</span></a></li>`)
+              .join('')}</ul>
+          </div>`,
+        )
+        .join('');
+      card.hidden = false;
+      globe?.setPaused(true);
+    }
+    const closeCard = () => {
+      card.hidden = true;
+      globe?.setPaused(false);
+    };
+    root.querySelector('[data-globe-close]').addEventListener('click', closeCard);
+    const onKey = (e) => e.key === 'Escape' && !card.hidden && closeCard();
+    window.addEventListener('keydown', onKey);
+    reset.addEventListener('click', () => {
+      globe?.reset();
+      closeCard();
+    });
+
+    // Mount the globe only when it's about to be seen; pause it when it's off screen.
+    let dead = false;
+    let resetTimer = 0;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting && !globe && !dead) {
+          Promise.all([import('../scripts/globe.js'), loadLand()]).then(([{ mountGlobe }, land]) => {
+            if (dead || globe) return;
+            globe = mountGlobe(globeEl, { places, bases, land, reducedMotion: reduced, onSelect: openCard });
+            if (!globe) {
+              globeEl.hidden = true; // no WebGL: the country list above still tells the story
+              return;
+            }
+            resetTimer = window.setInterval(() => (reset.hidden = !globe.zoomedIn()), 300);
+          });
+        }
+        globe?.setActive(e.isIntersecting);
+      },
+      { rootMargin: '400px 0px' },
+    );
+    io.observe(globeEl);
+    const hideHint = () => hint.classList.add('is-gone');
+    globeEl.addEventListener('pointerdown', hideHint, { once: true });
+
+    return () => {
+      dead = true;
+      io.disconnect();
+      countIO.disconnect();
+      clearInterval(resetTimer);
+      window.removeEventListener('keydown', onKey);
+      globe?.destroy();
+    };
+  });
+</script>

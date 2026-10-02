@@ -1,5 +1,6 @@
+import { location } from './location.js';
 import { photo } from './photo.js';
 import { story } from './story.js';
 import { videoEmbed } from './videoEmbed.js';
 
-export const schemaTypes = [story, photo, videoEmbed];
+export const schemaTypes = [story, photo, videoEmbed, location];

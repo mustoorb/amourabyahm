@@ -30,7 +30,7 @@ const P = 2 / 3; // portrait
 const L = 3 / 2; // landscape
 const S = 4 / 5; // near-square portrait
 
-function story({ slug, title, tags, year, created, date = created, featured = true, pinned = false, desc, cover, media, heroLoop = false }) {
+function story({ slug, title, tags, year, created, date = created, featured = true, pinned = false, location = null, desc, cover, media, heroLoop = false }) {
   const c = photo(cover[0], cover[1]);
   return {
     slug,
@@ -41,6 +41,7 @@ function story({ slug, title, tags, year, created, date = created, featured = tr
     year,
     featured,
     pinned,
+    location,
     created,
     desc,
     heroLoop,
@@ -55,6 +56,7 @@ function story({ slug, title, tags, year, created, date = created, featured = tr
 const featured = [
   story({
     slug: 'lea-karim-chantilly',
+    location: { place: 'Château de Chantilly', country: 'France', lat: 49.194, lng: 2.4855 },
     title: 'Léa & Karim',
     tags: ['Château', 'Paris'],
     year: 2026,
@@ -65,6 +67,7 @@ const featured = [
   }),
   story({
     slug: 'noor-adam-al-maha',
+    location: { place: 'Al Maha Desert Resort', country: 'United Arab Emirates', lat: 24.8331, lng: 55.6643 },
     title: 'Noor & Adam',
     tags: ['Desert', 'Dubai'],
     year: 2026,
@@ -75,6 +78,7 @@ const featured = [
   }),
   story({
     slug: 'camille-theo-riviera',
+    location: { place: 'Cap Ferrat', country: 'France', lat: 43.684, lng: 7.33 },
     title: 'Camille & Théo',
     tags: ['Riviera', 'Destination'],
     year: 2025,
@@ -85,6 +89,7 @@ const featured = [
   }),
   story({
     slug: 'sara-yusuf-marrakech',
+    location: { place: 'Marrakech', country: 'Morocco', lat: 31.6295, lng: -7.9811 },
     title: 'Sara & Yusuf',
     tags: ['Destination', 'Garden'],
     year: 2025,
@@ -95,6 +100,7 @@ const featured = [
   }),
   story({
     slug: 'ines-marc-montmartre',
+    location: { place: 'Montmartre, Paris', country: 'France', lat: 48.8867, lng: 2.3431 },
     title: 'Inès & Marc',
     tags: ['Intimate', 'Paris'],
     year: 2025,
@@ -105,6 +111,7 @@ const featured = [
   }),
   story({
     slug: 'maya-omar-palm',
+    location: { place: 'Palm Jumeirah', country: 'United Arab Emirates', lat: 25.1124, lng: 55.139 },
     title: 'Maya & Omar',
     tags: ['Night', 'Dubai'],
     year: 2024,
@@ -115,6 +122,7 @@ const featured = [
   }),
   story({
     slug: 'elise-jonas-provence',
+    location: { place: 'Gordes, Provence', country: 'France', lat: 43.9116, lng: 5.2003 },
     title: 'Élise & Jonas',
     tags: ['Garden', 'Château'],
     year: 2024,
@@ -125,6 +133,7 @@ const featured = [
   }),
   story({
     slug: 'lina-rami-lake-como',
+    location: { place: 'Lake Como', country: 'Italy', lat: 45.9855, lng: 9.2617 },
     title: 'Lina & Rami',
     tags: ['Destination', 'Intimate'],
     year: 2024,
@@ -137,15 +146,15 @@ const featured = [
 
 const firstNames = ['Anaïs', 'Hugo', 'Yasmin', 'Louis', 'Rania', 'Victor', 'Jade', 'Samir', 'Chloé', 'Nadim', 'Zoé', 'Tarek', 'Manon', 'Idris', 'Salomé', 'Karim', 'Laila', 'Paul'];
 const places = [
-  ['Versailles', ['Château', 'Paris']],
-  ['Abu Dhabi', ['Desert', 'Dubai']],
-  ['Saint-Tropez', ['Riviera']],
-  ['Santorini', ['Destination']],
-  ['Le Marais', ['Intimate', 'Paris']],
-  ['Hatta', ['Desert']],
-  ['Bordeaux', ['Garden', 'Château']],
-  ['Jumeirah', ['Night', 'Dubai']],
-  ['Amalfi', ['Destination', 'Riviera']],
+  ['Versailles', ['Château', 'Paris'], 'France', 48.8049, 2.1204],
+  ['Abu Dhabi', ['Desert', 'Dubai'], 'United Arab Emirates', 24.4539, 54.3773],
+  ['Saint-Tropez', ['Riviera'], 'France', 43.2727, 6.6406],
+  ['Santorini', ['Destination'], 'Greece', 36.4618, 25.3753],
+  ['Le Marais, Paris', ['Intimate', 'Paris'], 'France', 48.8590, 2.3622],
+  ['Hatta', ['Desert'], 'United Arab Emirates', 24.7963, 56.1175],
+  ['Bordeaux', ['Garden', 'Château'], 'France', 44.8378, -0.5792],
+  ['Jumeirah', ['Night', 'Dubai'], 'United Arab Emirates', 25.2048, 55.2435],
+  ['Amalfi', ['Destination', 'Riviera'], 'Italy', 40.6340, 14.6027],
 ];
 
 /** Non-featured filler so the Archive has depth. Delete once real stories exist in Sanity. */
@@ -154,7 +163,7 @@ function makeArchive(count = 14) {
   for (let i = 0; i < count; i++) {
     const a = firstNames[(i * 2) % firstNames.length];
     const b = firstNames[(i * 2 + 1) % firstNames.length];
-    const [place, tags] = places[i % places.length];
+    const [place, tags, country, lat, lng] = places[i % places.length];
     const year = 2024 - Math.floor(i / 5);
     const month = String(12 - (i % 12)).padStart(2, '0');
     const id = `ar${i}`;
@@ -167,6 +176,7 @@ function makeArchive(count = 14) {
         year,
         created: `${year}-${month}-0${(i % 9) + 1}`,
         featured: false,
+        location: { place, country, lat, lng },
         desc: `${place}, ${year}. A day told in light and small gestures — the moments in between that end up mattering most.`,
         cover: [`${id}-cover`, aspects[i % aspects.length]],
         media: Array.from({ length: 5 + (i % 4) }, (_, k) => [`${id}-${k}`, aspects[(i + k) % aspects.length]]),
